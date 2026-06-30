@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد نقشه</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- نقشه - پس‌زمینه -->
+<div id="map">{{ map_html | safe }}</div>
+
+<!-- پنل فروشنده‌ها -->
+<div class="panel" id="visitorPanel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <i class="fas fa-user-tie"></i>
+            <span>فروشنده‌ها</span>
+        </div>
+        <div class="online-badge">
+            <span class="pulse-dot"></span>
+            <span id="onlineCount">۰</span> آنلاین
+        </div>
+    </div>
+    <div class="panel-list" id="visitorList">
+        <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

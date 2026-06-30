@@ -1,0 +1,19 @@
+{
+    "FLASK_CONFIG": {
+        "DEBUG": true,
+        "HOST": "0.0.0.0",
+        "PORT": 5080
+    },
+    "DATABASE_CONFIG": {
+        "Server": "AMIN-PC",
+        "Port": "1433",
+        "dbName": "karao1407",
+        "dbUser": "sa",
+        "dbPassword": "1464"
+    },
+    "COMPANY_CONFIG": {
+        "name": "test",
+        "lat": 37.539215,
+        "lng": 45.071377
+    }
+}
