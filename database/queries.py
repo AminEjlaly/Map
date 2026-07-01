@@ -66,3 +66,45 @@ def get_all_buyers_with_location() -> list:
     except Exception as e:
         print(f"❌ get_all_buyers_with_location: {e}")
         return []
+def get_online_visitors_last_location() -> list:
+    """آخرین موقعیت ویزیتورهایی که isOnline = 1 هستن"""
+    q = """
+        SELECT VisitorCode, VisitorName, Lat, Lng, Time, date
+        FROM (
+            SELECT t.VisitorCode, t.VisitorName, t.Lat, t.Lng, t.Time, t.date,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY t.VisitorCode
+                       ORDER BY t.date DESC, t.Time DESC
+                   ) AS rn
+            FROM TblVisitorLocation t
+            INNER JOIN settingApp s ON s.codeV = t.VisitorCode
+            WHERE s.isOnline = 1
+              AND t.Lat IS NOT NULL AND t.Lng IS NOT NULL
+              AND ISNUMERIC(t.Lat) = 1 AND ISNUMERIC(t.Lng) = 1
+        ) ranked
+        WHERE rn = 1
+    """
+    try:
+        with _db.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(q)
+            result = []
+            for r in cur.fetchall():
+                try:
+                    lat, lng = float(r[2]), float(r[3])
+                except (TypeError, ValueError):
+                    continue
+                if lat == 0 or lng == 0:
+                    continue
+                result.append({
+                    "code":  r[0],
+                    "name":  r[1],
+                    "lat":   lat,
+                    "lng":   lng,
+                    "time":  str(r[4]) if r[4] else "",
+                    "date":  str(r[5]) if r[5] else "",
+                })
+            return result
+    except Exception as e:
+        print(f"❌ get_online_visitors_last_location: {e}")
+        return []

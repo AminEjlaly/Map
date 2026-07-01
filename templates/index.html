@@ -9,21 +9,55 @@
 </head>
 <body>
 
-<!-- نقشه - پس‌زمینه -->
-<div id="map">{{ map_html | safe }}</div>
+<!-- نقشه - پس‌زمینه (iframe جدا) -->
+<div id="map">
+    <iframe id="mapFrame" src="/map-frame" style="width:100%;height:100%;border:none;"></iframe>
+</div>
 
-<!-- پنل فروشنده‌ها -->
+<!-- سرچ‌بار روی نقشه -->
+<div class="map-search-wrap">
+    <div class="map-search-box">
+        <i class="fas fa-search map-search-icon"></i>
+        <input type="text" id="mapSearchInput" class="map-search-input"
+               placeholder="جستجوی مشتری..." autocomplete="off" dir="rtl">
+        <button class="map-search-clear" id="mapSearchClear" style="display:none">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="map-search-results" id="mapSearchResults"></div>
+</div>
+
+<!-- پنل -->
 <div class="panel" id="visitorPanel">
+    <div class="section-toolbar">
+        <button class="section-btn active" data-section="visitors" data-tooltip="لیست ویزیتورها">
+            <i class="fas fa-user-tie"></i>
+        </button>
+        <button class="section-btn" data-section="customers" data-tooltip="مشتری‌های ثبت‌شده">
+            <i class="fas fa-users"></i>
+        </button>
+        <button class="section-btn" data-section="payments" data-tooltip="پرداخت‌ها">
+            <i class="fas fa-money-bill-wave"></i>
+        </button>
+        <button class="section-btn" data-section="user-settings" data-tooltip="تنظیمات کاربران">
+            <i class="fas fa-user-cog"></i>
+        </button>
+        <button class="section-btn" data-section="general-settings" data-tooltip="تنظیمات عمومی">
+            <i class="fas fa-cog"></i>
+        </button>
+    </div>
+
     <div class="panel-header">
         <div class="panel-title">
-            <i class="fas fa-user-tie"></i>
-            <span>فروشنده‌ها</span>
+            <i class="fas fa-user-tie" id="sectionIcon"></i>
+            <span id="sectionTitle">فروشنده‌ها</span>
         </div>
-        <div class="online-badge">
+        <div class="online-badge" id="onlineBadge">
             <span class="pulse-dot"></span>
             <span id="onlineCount">۰</span> آنلاین
         </div>
     </div>
+
     <div class="panel-list" id="visitorList">
         <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
     </div>
