@@ -16,13 +16,14 @@ def _today_jalali() -> str:
 def _shared_data():
     sellers = db.get_active_visitors()
     return dict(
-        cities             = db.get_cities(),
+        cities             = db.get_cities_with_customers(),
         buyers             = [],
         selected_cities    = [],
         selected_customers = [],
         sellers            = sellers,
         sales_by_seller    = db.get_sales_by_seller([nof for nof, _ in sellers]),
         no_location        = False,
+        all_buyers_json    = [],
     )
 
 
@@ -74,7 +75,7 @@ def seller_last_location():
             # فعلاً از نقشه Neshan استفاده می‌کنیم
             from config.settings_loader import COMPANY_CONFIG
             center = [float(COMPANY_CONFIG["lat"]), float(COMPANY_CONFIG["lng"])]
-            
+
             # نقشه ساده با دو نقطه
             script = f"""
             // مارکر شرکت
@@ -90,7 +91,7 @@ def seller_last_location():
             map_html = base_map(zoom=15)  # بعداً بهتر می‌کنیم
             # فعلاً از base_map استفاده می‌کنیم تا بعداً تابع اختصاصی بسازیم
             map_html = map_html.replace(
-                "center:  [", 
+                "center:  [",
                 f"center:  [{lat}, {lng}],"
             )  # تقریبی — بعداً دقیق‌تر می‌کنیم
         except:
@@ -105,19 +106,19 @@ def visitor_path_animated(seller_code):
     # بررسی اولیه در route هم انجام بده
     if seller_code == 'unknown' or str(seller_code).lower() == 'unknown':
         return render_template("index.html", map_html=base_map(), **_shared_data())
-    
+
     date_str = fa_to_en(request.args.get("report_date", ""))
-    
+
     try:
         visitor_code = int(seller_code)
     except (ValueError, TypeError):
         return render_template("index.html", map_html=base_map(), **_shared_data())
-    
+
     locs = db.get_visitor_locations(
         visitor_code=visitor_code,  # حتماً int
         report_date=date_str or None,
     )
-    
+
     map_html = visitor_animated_map(locs)
     return render_template("index.html", map_html=map_html, **_shared_data())
 
@@ -125,23 +126,9 @@ def visitor_path_animated(seller_code):
 def visitors_no_location():
     today = _today_jalali()
     missing = db.get_visitors_without_location_today(today)
-    
+
     return jsonify({
         "date":     today,
         "count":    len(missing),
         "visitors": [{"code": r[0], "name": r[1]} for r in missing],
     })
-    
-    
-def _shared_data():
-    sellers = db.get_active_visitors()
-    return dict(
-        cities             = db.get_cities(),
-        buyers             = [],
-        selected_cities    = [],
-        selected_customers = [],
-        sellers            = sellers,
-        sales_by_seller    = db.get_sales_by_seller([nof for nof, _ in sellers]),
-        no_location        = False,
-        all_buyers_json    = [],   # ← اضافه کن
-    )

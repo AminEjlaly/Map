@@ -87,3 +87,39 @@ def payment_photo(filename):
 def debug_visitor_locations():
     data = db.get_online_visitors_last_location()
     return jsonify({"count": len(data), "data": data})
+
+# routes/api_routes.py - اضافه کردن به انتهای فایل
+
+@api_bp.route("/api/users-settings")
+def api_users_settings():
+    """دریافت لیست کاربران با تنظیمات دسترسی"""
+    result = db.get_users_settings()
+    return jsonify(result)
+
+
+@api_bp.route("/api/update-user-settings", methods=['POST'])
+def api_update_user_settings():
+    """به‌روزرسانی تنظیمات یک کاربر"""
+    data = request.get_json()
+    
+    # اعتبارسنجی داده‌ها
+    required_fields = ['user_code', 'user_type']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'success': False, 'message': f'فیلد {field} الزامی است'}), 400
+    
+    result = db.update_user_settings(data)
+    return jsonify(result)
+
+
+@api_bp.route("/api/user-types")
+def api_user_types():
+    """دریافت انواع کاربران برای فیلتر"""
+    return jsonify({
+        'success': True,
+        'types': [
+            {'value': 'visitor', 'label': 'ویزیتور', 'icon': 'fa-user-tie'},
+            {'value': 'staff', 'label': 'پرسنل', 'icon': 'fa-user-cog'},
+            {'value': 'buyer', 'label': 'مشتری', 'icon': 'fa-user'}
+        ]
+    })

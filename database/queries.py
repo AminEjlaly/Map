@@ -324,3 +324,169 @@ def confirm_payment(payment_id: int, confirmed_by: str) -> dict:
     except Exception as e:
         print(f"❌ confirm_payment: {e}")
         return {"success": False, "message": f"خطا در تایید پرداخت: {str(e)}"}
+
+# database/queries.py - اصلاح تابع get_users_settings
+
+def get_users_settings() -> dict:
+    """دریافت لیست کاربران با تنظیمات دسترسی"""
+    query = """
+        SELECT 
+            ID,
+            codeV,
+            codeM,
+            codeB,
+            nameV,
+            nameM,
+            nameB,
+            status,
+            statussell,
+            manfi,
+            proximity_check_enabled,
+            maxDistance,
+            createdAt,
+            updatedAt,
+            lastLogin,
+            location_tracking_enabled,
+            isOnline,
+            lastSeen
+        FROM settingApp
+        ORDER BY 
+            CASE 
+                WHEN codeV IS NOT NULL THEN 1 
+                WHEN codeM IS NOT NULL THEN 2 
+                WHEN codeB IS NOT NULL THEN 3 
+                ELSE 4 
+            END,
+            nameV, nameM, nameB
+    """
+    
+    try:
+        with _db.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(query)
+            rows = cur.fetchall()
+            
+            users = []
+            for r in rows:
+                # تعیین نوع کاربر و نام مربوطه
+                user_type = ''
+                user_code = ''
+                user_name = ''
+                
+                # بررسی کد ویزیتور
+                if r[1] and r[1] != '' and r[1] is not None:
+                    user_type = 'visitor'
+                    user_code = str(r[1])
+                    user_name = str(r[4]) if r[4] else 'ویزیتور بدون نام'
+                # بررسی کد پرسنل/تحویل‌دار
+                elif r[2] and r[2] != '' and r[2] is not None:
+                    user_type = 'staff'
+                    user_code = str(r[2])
+                    user_name = str(r[5]) if r[5] else 'پرسنل بدون نام'
+                # بررسی کد مشتری
+                elif r[3] and r[3] != '' and r[3] is not None:
+                    user_type = 'buyer'
+                    user_code = str(r[3])
+                    user_name = str(r[6]) if r[6] else 'مشتری بدون نام'
+                else:
+                    # اگر هیچ کدی نداشت، رد میشه
+                    continue
+                
+                user = {
+                    'id': int(r[0]) if r[0] else 0,
+                    'codeV': str(r[1]) if r[1] else '',
+                    'codeM': str(r[2]) if r[2] else '',
+                    'codeB': str(r[3]) if r[3] else '',
+                    'user_code': user_code,
+                    'user_type': user_type,
+                    'name': user_name,
+                    'status': bool(r[7]) if r[7] is not None else False,
+                    'statussell': bool(r[8]) if r[8] is not None else False,
+                    'manfi': bool(r[9]) if r[9] is not None else False,
+                    'proximity_check_enabled': bool(r[10]) if r[10] is not None else False,
+                    'maxDistance': int(r[11]) if r[11] is not None else 0,
+                    'createdAt': str(r[12]) if r[12] else '',
+                    'updatedAt': str(r[13]) if r[13] else '',
+                    'lastLogin': str(r[14]) if r[14] else '',
+                    'location_tracking_enabled': bool(r[15]) if r[15] is not None else False,
+                    'isOnline': bool(r[16]) if r[16] is not None else False,
+                    'lastSeen': str(r[17]) if r[17] else ''
+                }
+                users.append(user)
+            
+            return {
+                'success': True,
+                'users': users,
+                'total': len(users)
+            }
+            
+    except Exception as e:
+        print(f"❌ get_users_settings: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            'success': False,
+            'users': [],
+            'total': 0,
+            'error': str(e)
+        }
+
+
+def update_user_settings(user_data: dict) -> dict:
+    """به‌روزرسانی تنظیمات یک کاربر"""
+    # پیدا کردن کد کاربر
+    user_code = user_data.get('user_code', '')
+    user_type = user_data.get('user_type', '')
+    
+    if not user_code:
+        return {'success': False, 'message': 'کد کاربر نامعتبر است'}
+    
+    # تعیین ستون مربوطه
+    code_column = ''
+    if user_type == 'visitor':
+        code_column = 'codeV'
+    elif user_type == 'staff':
+        code_column = 'codeM'
+    elif user_type == 'buyer':
+        code_column = 'codeB'
+    else:
+        return {'success': False, 'message': 'نوع کاربر نامعتبر است'}
+    
+    # ساخت کوئری به‌روزرسانی - استفاده از ? برای pyodbc
+    query = f"""
+        UPDATE settingApp
+        SET 
+            status = ?,
+            statussell = ?,
+            manfi = ?,
+            proximity_check_enabled = ?,
+            maxDistance = ?,
+            location_tracking_enabled = ?,
+            updatedAt = GETDATE()
+        WHERE {code_column} = ?
+    """
+    
+    try:
+        with _db.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(query, (
+                int(user_data.get('status', False)),
+                int(user_data.get('statussell', False)),
+                int(user_data.get('manfi', False)),
+                int(user_data.get('proximity_check_enabled', False)),
+                user_data.get('maxDistance', 0),
+                int(user_data.get('location_tracking_enabled', False)),
+                user_code
+            ))
+            conn.commit()
+            
+            if cur.rowcount > 0:
+                return {'success': True, 'message': 'تنظیمات با موفقیت به‌روزرسانی شد'}
+            else:
+                return {'success': False, 'message': 'کاربر یافت نشد یا تغییری ایجاد نشد'}
+                
+    except Exception as e:
+        print(f"❌ update_user_settings: {e}")
+        import traceback
+        traceback.print_exc()
+        return {'success': False, 'message': f'خطا در به‌روزرسانی: {str(e)}'}

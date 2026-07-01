@@ -4,7 +4,7 @@ const SECTIONS = {
     visitors:           { title: 'فروشنده‌ها',         icon: 'fa-user-tie',       showBadge: true,  showSearch: true,  load: loadVisitors },
     customers:          { title: 'مشتری‌های ثبت‌شده',  icon: 'fa-users',          showBadge: false, showSearch: true,  load: loadCustomers },
     payments:           { title: 'پرداخت‌ها',           icon: 'fa-money-bill-wave', showBadge: false, showSearch: false, load: loadPayments },
-    'user-settings':    { title: 'تنظیمات کاربران',    icon: 'fa-user-cog',       showBadge: false, showSearch: false, load: () => renderComingSoon('تنظیمات کاربران') },
+    'user-settings':    { title: 'تنظیمات کاربران',    icon: 'fa-user-cog',       showBadge: false, showSearch: true,  load: loadUserSettings },
     'general-settings': { title: 'تنظیمات عمومی',      icon: 'fa-cog',            showBadge: false, showSearch: false, load: () => renderComingSoon('تنظیمات عمومی') },
 };
 
@@ -15,6 +15,17 @@ let currentSection = 'visitors';
 let visitorsInterval = null;
 let mapFrameReady = false;
 let _renderedCustomers = [];
+let _usersData = [];
+let _userTypes = [];
+let currentUserFilter = 'all'; // 'all' | 'visitor' | 'staff' | 'buyer'
+
+
+
+
+
+/* ── شهرها ────────────────────────────────────────────── */
+let _citiesData = [];
+let _selectedCityCode = null;
 
 /* ── دسترسی به iframe نقشه ────────────────────────────── */
 function getMapFrame() {
@@ -45,6 +56,8 @@ function renderComingSoon(label) {
         </div>`;
 }
 
+// static/js/script.js - به‌روزرسانی تابع switchSection
+
 function switchSection(key) {
     currentSection = key;
     const cfg = SECTIONS[key];
@@ -59,12 +72,20 @@ function switchSection(key) {
     const searchWrap  = document.getElementById('panelSearchWrap');
     const searchInput = document.getElementById('panelSearchInput');
     const searchClear = document.getElementById('panelSearchClear');
+    
+    // برای تنظیمات کاربران هم جستجو فعال باشد
     searchWrap.style.display  = cfg.showSearch ? 'flex' : 'none';
     searchInput.value          = '';
     searchClear.style.display  = 'none';
 
     clearInterval(visitorsInterval);
     visitorsInterval = null;
+    
+    // ریست کردن فیلتر کاربران
+    if (key === 'user-settings') {
+        currentUserFilter = 'all';
+    }
+    
     cfg.load();
     if (key === 'visitors') visitorsInterval = setInterval(loadVisitors, 15000);
 }
@@ -214,6 +235,8 @@ function applyCurrentSearch(data, section) {
     return data;
 }
 
+// static/js/script.js - به‌روزرسانی تابع initPanelSearch
+
 function initPanelSearch() {
     const input    = document.getElementById('panelSearchInput');
     const clearBtn = document.getElementById('panelSearchClear');
@@ -227,6 +250,9 @@ function initPanelSearch() {
             renderVisitorsList(applyCurrentSearch(window._visitorsData || [], 'visitors'));
         } else if (currentSection === 'customers') {
             renderCustomersList(applyCurrentSearch(window._customersData || [], 'customers'));
+        } else if (currentSection === 'user-settings') {
+            // برای تنظیمات کاربران، فیلتر مجدد اعمال شود
+            renderUserSettings(_usersData);
         }
     }
 
@@ -326,6 +352,120 @@ function initMapSearch() {
         });
     }
 }
+
+/* ── انتخاب شهر روی نقشه ───────────────────────────────── */
+function renderCityList(list) {
+    const listEl = document.getElementById('citySelectList');
+
+    if (!list.length) {
+        listEl.innerHTML = '<div class="city-select-empty">شهری یافت نشد</div>';
+        return;
+    }
+
+    const allItem = `
+        <div class="city-select-item ${!_selectedCityCode ? 'active' : ''}" data-code="">
+            <i class="fas fa-globe"></i>
+            <span>همه شهرها</span>
+        </div>`;
+
+    const items = list.map(c => `
+        <div class="city-select-item ${String(_selectedCityCode) === String(c.code) ? 'active' : ''}" data-code="${c.code}">
+            <i class="fas fa-map-marker-alt"></i>
+            <span>${c.name}</span>
+        </div>`).join('');
+
+    listEl.innerHTML = allItem + items;
+
+    listEl.querySelectorAll('.city-select-item').forEach(el => {
+        el.addEventListener('click', () => {
+            const code = el.dataset.code || null;
+            const name = el.querySelector('span').textContent;
+            selectCity(code, name);
+        });
+    });
+}
+
+function selectCity(code, name) {
+    _selectedCityCode = code || null;
+    document.getElementById('citySelectLabel').textContent = name;
+
+    // بستن دراپ‌داون
+    document.getElementById('citySelectBox').classList.remove('open');
+    document.getElementById('citySelectDropdown').classList.remove('open');
+
+    // رفرش لیست (برای هایلایت آیتم فعال، اگه دوباره باز شد)
+    renderCityList(_citiesData);
+
+    // ری‌لود iframe نقشه با فیلتر شهر
+    const frame = getMapFrame();
+    if (frame) {
+        mapFrameReady = false;
+        frame.src = _selectedCityCode
+            ? `/map-frame?city=${encodeURIComponent(_selectedCityCode)}`
+            : '/map-frame';
+    }
+}
+
+async function loadCities() {
+    const listEl = document.getElementById('citySelectList');
+    listEl.innerHTML = '<div class="city-select-empty">در حال بارگذاری...</div>';
+
+    try {
+        const data = await fetch('/api/cities').then(r => r.json());
+        _citiesData = (data.success && data.cities) ? data.cities : [];
+        renderCityList(_citiesData);
+    } catch (e) {
+        listEl.innerHTML = '<div class="city-select-empty">خطا در بارگذاری شهرها</div>';
+        console.error(e);
+    }
+}
+
+function initCitySelect() {
+    const box       = document.getElementById('citySelectBox');
+    const dropdown  = document.getElementById('citySelectDropdown');
+    const searchIn  = document.getElementById('citySelectSearchInput');
+
+    if (!box || !dropdown) return;
+
+    box.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = dropdown.classList.contains('open');
+        if (isOpen) {
+            box.classList.remove('open');
+            dropdown.classList.remove('open');
+        } else {
+            box.classList.add('open');
+            dropdown.classList.add('open');
+            if (!_citiesData.length) loadCities();
+            if (searchIn) { searchIn.value = ''; }
+        }
+    });
+
+    dropdown.addEventListener('click', (e) => e.stopPropagation());
+
+    if (searchIn) {
+        let timer = null;
+        searchIn.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                const q = searchIn.value.trim();
+                const filtered = q
+                    ? _citiesData.filter(c => c.name && c.name.includes(q))
+                    : _citiesData;
+                renderCityList(filtered);
+            }, 120);
+        });
+    }
+
+    document.addEventListener('click', () => {
+        box.classList.remove('open');
+        dropdown.classList.remove('open');
+    });
+
+    // لود اولیه شهرها (برای پر بودن لیست وقتی برای اولین بار باز میشه)
+    loadCities();
+}
+
 async function loadPayments() {
     const listEl = document.getElementById('visitorList');
     listEl.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
@@ -726,7 +866,366 @@ async function quickConfirmPayment(paymentId) {
         console.error(e);
     }
 }
+/* ── تنظیمات کاربران ────────────────────────────────────── */
+async function loadUserSettings() {
+    const listEl = document.getElementById('visitorList');
+    listEl.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
+    
+    try {
+        // دریافت انواع کاربران
+        const typesResponse = await fetch('/api/user-types');
+        const typesData = await typesResponse.json();
+        if (typesData.success) {
+            _userTypes = typesData.types;
+        }
+        
+        // دریافت لیست کاربران
+        const response = await fetch('/api/users-settings');
+        const data = await response.json();
+        
+        if (!data.success) {
+            listEl.innerHTML = `<p class="error">❌ ${data.error || 'مشکل در دریافت اطلاعات'}</p>`;
+            return;
+        }
+        
+        _usersData = data.users;
+        renderUserSettings(data.users);
+        
+    } catch (e) {
+        listEl.innerHTML = '<p class="error">❌ خطا در بارگذاری کاربران</p>';
+        console.error(e);
+    }
+}
 
+function renderUserSettings(users) {
+    const listEl = document.getElementById('visitorList');
+    
+    if (!users?.length) {
+        listEl.innerHTML = '<p class="empty">هیچ کاربری یافت نشد</p>';
+        return;
+    }
+    
+    // فیلتر بر اساس نوع کاربر
+    let filteredUsers = users;
+    if (currentUserFilter !== 'all') {
+        filteredUsers = users.filter(u => u.user_type === currentUserFilter);
+    }
+    
+    // جستجو
+    const searchQuery = document.getElementById('panelSearchInput')?.value?.trim() || '';
+    if (searchQuery) {
+        filteredUsers = filteredUsers.filter(u => 
+            u.name.includes(searchQuery) || 
+            u.user_code.includes(searchQuery)
+        );
+    }
+    
+    if (!filteredUsers.length) {
+        listEl.innerHTML = '<p class="empty">نتیجه‌ای یافت نشد</p>';
+        return;
+    }
+    
+    // هدر فیلترها
+    let html = `
+        <div class="user-filter-bar">
+            <button class="user-filter-btn ${currentUserFilter === 'all' ? 'active' : ''}" data-filter="all">
+                همه <span class="filter-count">${toFa(users.length)}</span>
+            </button>
+    `;
+    
+    _userTypes.forEach(type => {
+        const count = users.filter(u => u.user_type === type.value).length;
+        html += `
+            <button class="user-filter-btn ${currentUserFilter === type.value ? 'active' : ''}" data-filter="${type.value}">
+                <i class="fas ${type.icon}"></i>
+                ${type.label} <span class="filter-count">${toFa(count)}</span>
+            </button>
+        `;
+    });
+    
+    html += `</div>`;
+    
+    // لیست کاربران
+    html += `<div class="user-list">`;
+    
+    filteredUsers.forEach((user, index) => {
+        html += renderUserCard(user, index);
+    });
+    
+    html += `</div>`;
+    
+    listEl.innerHTML = html;
+    
+    // رویدادهای فیلتر
+   document.querySelectorAll('.user-setting-toggle').forEach(toggle => {
+    toggle.addEventListener('change', function() {
+        const userCode    = this.dataset.userCode;
+        const settingKey  = this.dataset.setting;
+        const value       = this.checked;
+
+        // نمایش/مخفی کردن آنی باکس «حداکثر فاصله» بدون نیاز به رفرش یا صبر برای سرور
+        if (settingKey === 'proximity_check_enabled') {
+            const card = this.closest('.user-card');
+            const proximityBox = card ? card.querySelector('.user-proximity-control') : null;
+            if (proximityBox) {
+                proximityBox.classList.toggle('hidden', !value);
+            }
+        }
+
+        updateUserSetting(userCode, settingKey, value);
+    });
+});
+    
+    // رویدادهای تغییر تنظیمات
+    document.querySelectorAll('.user-setting-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const userCode = this.dataset.userCode;
+            const settingKey = this.dataset.setting;
+            const value = this.checked;
+            updateUserSetting(userCode, settingKey, value);
+        });
+    });
+    
+    document.querySelectorAll('.user-distance-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const userCode = this.dataset.userCode;
+            const value = parseInt(this.value) || 0;
+            updateUserSetting(userCode, 'maxDistance', value);
+        });
+    });
+}
+
+function renderUserCard(user, index) {
+    // تعیین نوع کاربر
+    const typeMap = {
+        'visitor': { label: 'ویزیتور', icon: 'fa-user-tie', color: '#c9a84c' },
+        'staff': { label: 'پرسنل', icon: 'fa-user-cog', color: '#3b82f6' },
+        'buyer': { label: 'مشتری', icon: 'fa-user', color: '#22c55e' }
+    };
+    
+    const typeInfo = typeMap[user.user_type] || typeMap['visitor'];
+    
+    // وضعیت آنلاین
+    const onlineStatus = user.isOnline 
+        ? '<span class="user-online-badge"><span class="pulse-dot"></span> آنلاین</span>'
+        : '<span class="user-offline-badge">آفلاین</span>';
+    
+    // باکس محدوده - همیشه توی DOM هست، فقط با کلاس hidden مخفی/نمایان می‌شه
+    const proximityHtml = `
+        <div class="user-proximity-control ${user.proximity_check_enabled ? '' : 'hidden'}">
+            <label class="user-setting-label">
+                <span>حداکثر فاصله (متر)</span>
+                <input type="number" class="user-distance-input" 
+                       data-user-code="${user.user_code}" 
+                       value="${user.maxDistance || 0}"
+                       min="0" max="99999">
+            </label>
+        </div>
+    `;
+    
+    return `
+        <div class="user-card" data-user-code="${user.user_code}">
+            <div class="user-card-header">
+                <div class="user-info">
+                    <div class="user-avatar" style="background: ${typeInfo.color}22; border-color: ${typeInfo.color}44;">
+                        <i class="fas ${typeInfo.icon}" style="color: ${typeInfo.color};"></i>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">${user.name}</div>
+                        <div class="user-code">
+                            <span class="user-type-badge" style="background: ${typeInfo.color}22; color: ${typeInfo.color};">
+                                ${typeInfo.label}
+                            </span>
+                            <span>کد: ${user.user_code}</span>
+                            ${onlineStatus}
+                        </div>
+                    </div>
+                </div>
+                <div class="user-last-seen">
+                    ${user.lastSeen ? `آخرین بازدید: ${user.lastSeen}` : ''}
+                </div>
+            </div>
+            
+            <div class="user-settings-grid">
+                <div class="user-setting-item">
+                    <label class="user-setting-label">
+                        <span>🚪 اجازه ورود</span>
+                        <input type="checkbox" class="user-setting-toggle" 
+                               data-user-code="${user.user_code}" 
+                               data-setting="status"
+                               ${user.status ? 'checked' : ''}>
+                    </label>
+                </div>
+                
+                <div class="user-setting-item">
+                    <label class="user-setting-label">
+                        <span>📝 اجازه ثبت فاکتور</span>
+                        <input type="checkbox" class="user-setting-toggle" 
+                               data-user-code="${user.user_code}" 
+                               data-setting="statussell"
+                               ${user.statussell ? 'checked' : ''}>
+                    </label>
+                </div>
+                
+                <div class="user-setting-item">
+                    <label class="user-setting-label">
+                        <span>➖ فروش منفی</span>
+                        <input type="checkbox" class="user-setting-toggle" 
+                               data-user-code="${user.user_code}" 
+                               data-setting="manfi"
+                               ${user.manfi ? 'checked' : ''}>
+                    </label>
+                </div>
+                
+                <div class="user-setting-item">
+                    <label class="user-setting-label">
+                        <span>📍 کنترل محدوده</span>
+                        <input type="checkbox" class="user-setting-toggle" 
+                               data-user-code="${user.user_code}" 
+                               data-setting="proximity_check_enabled"
+                               ${user.proximity_check_enabled ? 'checked' : ''}>
+                    </label>
+                </div>
+                
+                ${proximityHtml}
+                
+                <div class="user-setting-item">
+                    <label class="user-setting-label">
+                        <span>📡 ردیابی موقعیت</span>
+                        <input type="checkbox" class="user-setting-toggle" 
+                               data-user-code="${user.user_code}" 
+                               data-setting="location_tracking_enabled"
+                               ${user.location_tracking_enabled ? 'checked' : ''}>
+                    </label>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/* ── به‌روزرسانی تنظیمات کاربر ──────────────────────────── */
+let _updateTimer = null;
+
+// static/js/script.js - اصلاح تابع updateUserSetting
+
+async function updateUserSetting(userCode, settingKey, value) {
+    // پیدا کردن کاربر
+    const user = _usersData.find(u => u.user_code === userCode);
+    if (!user) {
+        console.error(`❌ کاربر با کد ${userCode} یافت نشد`);
+        showToast('❌ کاربر یافت نشد', 'error');
+        return;
+    }
+    
+    console.log('📝 Updating user setting:', {
+        userCode,
+        settingKey,
+        value,
+        user: user
+    });
+    
+    // ساخت داده برای ارسال
+    const updateData = {
+        user_code: userCode,
+        user_type: user.user_type,  // مطمئن شوید که user_type وجود دارد
+        status: user.status,
+        statussell: user.statussell,
+        manfi: user.manfi,
+        proximity_check_enabled: user.proximity_check_enabled,
+        maxDistance: user.maxDistance || 0,
+        location_tracking_enabled: user.location_tracking_enabled
+    };
+    
+    // به‌روزرسانی مقدار مورد نظر
+    updateData[settingKey] = value;
+    
+    console.log('📤 Sending to server:', updateData);
+    
+    // اگر maxDistance هست، مقدار رو تنظیم کن
+    if (settingKey === 'maxDistance') {
+        updateData.maxDistance = value;
+    }
+    
+    // نمایش وضعیت در حال ذخیره
+    const toggle = document.querySelector(`.user-setting-toggle[data-user-code="${userCode}"][data-setting="${settingKey}"]`);
+    if (toggle) {
+        toggle.disabled = true;
+        const spinner = document.createElement('span');
+        spinner.style.cssText = 'font-size:11px; color:#c9a84c;';
+        spinner.textContent = ' ⏳';
+        toggle.parentElement.appendChild(spinner);
+    }
+    
+    // Debounce برای جلوگیری از درخواست‌های متعدد
+    clearTimeout(_updateTimer);
+    _updateTimer = setTimeout(async () => {
+        try {
+            const response = await fetch('/api/update-user-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updateData)
+            });
+            
+            const data = await response.json();
+            console.log('📥 Server response:', data);
+            
+            if (data.success) {
+                // به‌روزرسانی داده محلی
+                const userIndex = _usersData.findIndex(u => u.user_code === userCode);
+                if (userIndex !== -1) {
+                    _usersData[userIndex][settingKey] = value;
+                }
+                
+                showToast('✅ تنظیمات با موفقیت ذخیره شد', 'success');
+            } else {
+                showToast(`❌ ${data.message}`, 'error');
+                // برگرداندن وضعیت قبلی
+                if (toggle) {
+                    toggle.checked = !value;
+                }
+            }
+        } catch (e) {
+            console.error('❌ Error:', e);
+            showToast('❌ خطا در ارتباط با سرور', 'error');
+            if (toggle) {
+                toggle.checked = !value;
+            }
+        } finally {
+            if (toggle) {
+                toggle.disabled = false;
+                // حذف اسپینر
+                const spinner = toggle.parentElement.querySelector('span:last-child');
+                if (spinner && spinner.textContent.includes('⏳')) spinner.remove();
+            }
+        }
+    }, 500);
+}
+
+/* ── Toast Notification ──────────────────────────────────── */
+function showToast(message, type = 'info') {
+    const existingToast = document.querySelector('.custom-toast');
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = `custom-toast ${type}`;
+    toast.innerHTML = `
+        <div class="toast-content">
+            <span>${message}</span>
+            <button class="toast-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // نمایش با انیمیشن
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // حذف خودکار بعد از 3 ثانیه
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 
 /* ── utils ─────────────────────────────────────────────── */
 function toFa(n) {
@@ -741,6 +1240,7 @@ document.addEventListener('DOMContentLoaded', () => {
     switchSection('visitors');
     initMapSearch();
     initPanelSearch();
+    initCitySelect();
 
     const photoModalClose    = document.getElementById('photoModalClose');
     const photoModalBackdrop = document.getElementById('photoModalBackdrop');
