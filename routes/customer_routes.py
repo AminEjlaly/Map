@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, Response
+from flask import Blueprint, render_template, Response, request
 import database.queries as db
 from services.map_service import customers_map
 
@@ -12,7 +12,13 @@ def index():
 
 @customer_bp.route("/map-frame")
 def map_frame():
-    buyers       = db.get_all_buyers_with_location()
+    city_code    = request.args.get("city") or None
+    buyers       = db.get_all_buyers_with_location(city_code=city_code)
     visitor_locs = db.get_online_visitors_last_location()
-    html         = customers_map(buyers, visitors_location=visitor_locs, zoom=12)
+    html         = customers_map(
+        buyers,
+        visitors_location=visitor_locs,
+        zoom=12,
+        fit_bounds=bool(city_code),
+    )
     return Response(html, mimetype="text/html")

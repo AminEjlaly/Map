@@ -27,6 +27,13 @@ def new_customers():
     return jsonify({"success": True, "customers": customers})
 
 
+@api_bp.route("/api/cities")
+def api_cities():
+    """لیست شهرهایی که مشتری با موقعیت مکانی دارن - برای باکس انتخاب شهر روی نقشه"""
+    cities = db.get_cities_with_customers()
+    return jsonify({"success": True, "cities": cities})
+
+
 @api_bp.route("/customer-photos/<path:filename>")
 def customer_photo(filename):
     """سرویس تصاویر مشتری‌ها"""

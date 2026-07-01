@@ -14,16 +14,38 @@
     <iframe id="mapFrame" src="/map-frame" style="width:100%;height:100%;border:none;"></iframe>
 </div>
 
-<!-- سرچ‌بار روی نقشه -->
+<!-- سرچ‌بار + انتخاب شهر روی نقشه -->
 <div class="map-search-wrap">
-    <div class="map-search-box">
-        <i class="fas fa-search map-search-icon"></i>
-        <input type="text" id="mapSearchInput" class="map-search-input"
-               placeholder="جستجوی مشتری..." autocomplete="off" dir="rtl">
-        <button class="map-search-clear" id="mapSearchClear" style="display:none">
-            <i class="fas fa-times"></i>
-        </button>
+    <div class="map-toolbar-row">
+        <!-- باکس انتخاب شهر -->
+        <div class="city-select-box" id="citySelectBox">
+            <i class="fas fa-city city-select-icon"></i>
+            <span class="city-select-label" id="citySelectLabel">همه شهرها</span>
+            <i class="fas fa-chevron-down city-select-arrow"></i>
+        </div>
+
+        <!-- سرچ مشتری -->
+        <div class="map-search-box">
+            <i class="fas fa-search map-search-icon"></i>
+            <input type="text" id="mapSearchInput" class="map-search-input"
+                   placeholder="جستجوی مشتری..." autocomplete="off" dir="rtl">
+            <button class="map-search-clear" id="mapSearchClear" style="display:none">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
     </div>
+
+    <!-- دراپ‌داون لیست شهرها -->
+    <div class="city-select-dropdown" id="citySelectDropdown">
+        <div class="city-select-search">
+            <i class="fas fa-search"></i>
+            <input type="text" id="citySelectSearchInput"
+                   placeholder="جستجوی شهر..." autocomplete="off" dir="rtl">
+        </div>
+        <div class="city-select-list" id="citySelectList"></div>
+    </div>
+
+    <!-- نتایج سرچ مشتری -->
     <div class="map-search-results" id="mapSearchResults"></div>
 </div>
 

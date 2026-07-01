@@ -266,7 +266,12 @@ def _visitor_marker_js(lat, lng, name, code, time_str, date_str):
 
 
 # ── توابع عمومی ─────────────────────────────────────────────────────────────
-def customers_map(buyers: list, visitors_location: list = None, zoom: int = 12) -> str:
+def customers_map(buyers: list, visitors_location: list = None, zoom: int = 12,
+                   fit_bounds: bool = False) -> str:
+    """
+    fit_bounds=True یعنی بعد از اضافه شدن مارکرهای مشتری، نقشه خودکار روی
+    محدوده‌ی همون مشتری‌ها زوم کنه (برای حالت فیلتر بر اساس شهر).
+    """
     markers_js = [_company_marker_js()]
 
     for b in buyers:
@@ -288,6 +293,22 @@ def customers_map(buyers: list, visitors_location: list = None, zoom: int = 12) 
                 v.get("name", ""), v.get("code", ""),
                 v.get("time", ""), v.get("date", ""),
             ))
+
+    if fit_bounds:
+        markers_js.append("""
+        setTimeout(function() {
+          if (window.customerMarkers.length > 0) {
+            var bounds = window.customerMarkers.map(function(m) { return m.marker.getLatLng(); });
+            map.fitBounds(bounds, { padding: [70, 70], maxZoom: 16 });
+          }
+          try {
+            window.parent.postMessage(
+              { type: 'cityFilterResult', count: window.customerMarkers.length },
+              '*'
+            );
+          } catch (e) {}
+        }, 60);
+        """)
 
     return _wrap_html("\n".join(markers_js), zoom=zoom)
 

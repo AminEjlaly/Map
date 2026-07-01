@@ -34,8 +34,11 @@ def get_visitors_with_status() -> list:
     except Exception as e:
         print(f"❌ get_visitors_with_status: {e}")
         return []
-def get_all_buyers_with_location() -> list:
-    """همه مشتری‌هایی که Lat/Lng دارن - برای نمایش روی نقشه"""
+
+
+def get_all_buyers_with_location(city_code=None) -> list:
+    """مشتری‌هایی که Lat/Lng دارن - برای نمایش روی نقشه.
+    اگه city_code داده بشه فقط مشتری‌های همون شهر برمی‌گردن."""
     query = """
         SELECT b.BuyerCode, b.Name, b.Lat, b.Lng, b.Tel,
                ISNULL(SUM(s.Bedahkar),0) - ISNULL(SUM(s.bestankar),0) AS Mandeh
@@ -44,13 +47,26 @@ def get_all_buyers_with_location() -> list:
         WHERE  b.Lat IS NOT NULL AND b.Lng IS NOT NULL
           AND  b.Lat <> '' AND b.Lng <> ''
           AND  ISNUMERIC(b.Lat) = 1 AND ISNUMERIC(b.Lng) = 1
+          {city_condition}
         GROUP BY b.BuyerCode, b.Name, b.Lat, b.Lng, b.Tel
         ORDER BY b.Name
     """
+
+    city_condition = ""
+    params = ()
+    if city_code:
+        city_condition = "AND b.CityCode = ?"
+        params = (city_code,)
+
+    query = query.format(city_condition=city_condition)
+
     try:
         with _db.get_connection() as conn:
             cur = conn.cursor()
-            cur.execute(query)
+            if params:
+                cur.execute(query, params)
+            else:
+                cur.execute(query)
             result = []
             for r in cur.fetchall():
                 try:
@@ -67,6 +83,29 @@ def get_all_buyers_with_location() -> list:
     except Exception as e:
         print(f"❌ get_all_buyers_with_location: {e}")
         return []
+
+
+def get_cities_with_customers() -> list:
+    """لیست شهرهایی که حداقل یک مشتری با موقعیت مکانی (Lat/Lng) دارن -
+    برای پر کردن باکس انتخاب شهر روی نقشه."""
+    q = """
+        SELECT DISTINCT c.CityCode, c.CityName
+        FROM City c
+        INNER JOIN Buyer b ON b.CityCode = c.CityCode
+        WHERE b.Lat IS NOT NULL AND b.Lng IS NOT NULL
+          AND b.Lat <> '' AND b.Lng <> ''
+        ORDER BY c.CityName
+    """
+    try:
+        with _db.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(q)
+            return [{"code": r[0], "name": r[1]} for r in cur.fetchall()]
+    except Exception as e:
+        print(f"❌ get_cities_with_customers: {e}")
+        return []
+
+
 def get_online_visitors_last_location() -> list:
     """آخرین موقعیت ویزیتورهایی که isOnline = 1 هستن"""
     q = """
@@ -109,7 +148,8 @@ def get_online_visitors_last_location() -> list:
     except Exception as e:
         print(f"❌ get_online_visitors_last_location: {e}")
         return []
-    
+
+
 def get_new_customers(limit: int = 50) -> list:
     """آخرین مشتری‌های ثبت‌شده - هر مشتری با همه‌ی عکس‌هاش و اسم ثبت‌کننده"""
     q = """
@@ -152,7 +192,8 @@ def get_new_customers(limit: int = 50) -> list:
     except Exception as e:
         print(f"❌ get_new_customers: {e}")
         return []
-# database/queries.py - اضافه کردن به انتهای فایل
+
+
 def get_payments_with_status() -> dict:
     """دریافت لیست پرداخت‌ها با دسته‌بندی تایید شده/در انتظار"""
     query = """
@@ -179,32 +220,38 @@ def get_payments_with_status() -> dict:
             CASE WHEN IsConfirmed = 0 THEN 0 ELSE 1 END,
             RegisterDatetime DESC
     """
-    
+
     try:
         with _db.get_connection() as conn:
             cur = conn.cursor()
             cur.execute(query)
             rows = cur.fetchall()
-            
+
             pending = []
             confirmed = []
-            
+
             for r in rows:
-                # تبدیل صحیح Boolean
+                # ── ایندکس‌های درست ────────────────────────
+                # 0 PaymentID   1 CustomerCode   2 CustomerName
+                # 3 DeliveryUserID  4 DeliveryName  5 PaymentType
+                # 6 Amount  7 SerialNumber  8 CheckDueDate
+                # 9 SayyadiNumber  10 ImagePath  11 RegisterDateSh
+                # 12 RegisterDatetime  13 Description
+                # 14 IsConfirmed  15 ConfirmedBy  16 ConfirmedAt
+
                 is_confirmed = False
-                if r[13] is not None:
-                    if isinstance(r[13], bool):
-                        is_confirmed = r[13]
-                    elif isinstance(r[13], (int, float)):
-                        is_confirmed = bool(r[13])
-                    elif isinstance(r[13], str):
-                        is_confirmed = r[13].lower() in ('1', 'true', 'yes')
-                
-                # تبدیل تاریخ‌ها به رشته
-                register_date = str(r[11]) if r[11] else ""
-                confirmed_at = str(r[16]) if r[16] else ""
-                check_due_date = str(r[8]) if r[8] else ""
-                
+                if r[14] is not None:
+                    if isinstance(r[14], bool):
+                        is_confirmed = r[14]
+                    elif isinstance(r[14], (int, float)):
+                        is_confirmed = bool(r[14])
+                    elif isinstance(r[14], str):
+                        is_confirmed = r[14].lower() in ('1', 'true', 'yes')
+
+                register_date  = str(r[11]) if r[11] else ""
+                confirmed_at   = str(r[16]) if r[16] else ""
+                check_due_date = str(r[8])  if r[8]  else ""
+
                 payment = {
                     "PaymentID": int(r[0]) if r[0] else 0,
                     "CustomerCode": str(r[1]) if r[1] else "",
@@ -218,18 +265,18 @@ def get_payments_with_status() -> dict:
                     "SayyadiNumber": str(r[9]) if r[9] else "",
                     "ImagePath": str(r[10]) if r[10] else "",
                     "RegisterDateSh": register_date,
-                    "RegisterDatetime": str(r[11]) if r[11] else "",
-                    "Description": str(r[12]) if r[12] else "",
+                    "RegisterDatetime": str(r[12]) if r[12] else "",
+                    "Description": str(r[13]) if r[13] else "",
                     "IsConfirmed": is_confirmed,
-                    "ConfirmedBy": str(r[14]) if r[14] else "",
+                    "ConfirmedBy": str(r[15]) if r[15] else "",
                     "ConfirmedAt": confirmed_at
                 }
-                
+
                 if payment["IsConfirmed"]:
                     confirmed.append(payment)
                 else:
                     pending.append(payment)
-            
+
             return {
                 "success": True,
                 "pending": pending,
@@ -237,7 +284,7 @@ def get_payments_with_status() -> dict:
                 "total_pending": len(pending),
                 "total_confirmed": len(confirmed)
             }
-            
+
     except Exception as e:
         print(f"❌ get_payments_with_status: {e}")
         import traceback
@@ -252,11 +299,8 @@ def get_payments_with_status() -> dict:
         }
 
 
-# database/queries.py - اصلاح تابع confirm_payment
-
 def confirm_payment(payment_id: int, confirmed_by: str) -> dict:
     """تایید یک پرداخت"""
-    # استفاده از ? به جای %s برای pyodbc
     query = """
         UPDATE CustomerPayments
         SET 
@@ -265,18 +309,18 @@ def confirm_payment(payment_id: int, confirmed_by: str) -> dict:
             ConfirmedAt = GETDATE()
         WHERE PaymentID = ? AND IsConfirmed = 0
     """
-    
+
     try:
         with _db.get_connection() as conn:
             cur = conn.cursor()
             cur.execute(query, (confirmed_by, payment_id))
             conn.commit()
-            
+
             if cur.rowcount > 0:
                 return {"success": True, "message": "پرداخت با موفقیت تایید شد"}
             else:
                 return {"success": False, "message": "پرداخت قبلاً تایید شده یا وجود ندارد"}
-                
+
     except Exception as e:
         print(f"❌ confirm_payment: {e}")
         return {"success": False, "message": f"خطا در تایید پرداخت: {str(e)}"}

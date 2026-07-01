@@ -1,4 +1,3 @@
-
 /*static/style.css*/
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -31,7 +30,7 @@ html, body {
 }
 #map iframe { width: 100% !important; height: 100% !important; border: none; display: block; }
 
-/* ── سرچ‌بار ────────────────────────────────────────────── */
+/* ── سرچ‌بار + انتخاب شهر ──────────────────────────────── */
 .map-search-wrap {
     position: fixed;
     top: 18px;
@@ -42,6 +41,13 @@ html, body {
     align-items: center;
     z-index: 400;
     pointer-events: none;
+}
+
+.map-toolbar-row {
+    pointer-events: none;
+    display: flex;
+    gap: 10px;
+    align-items: center;
 }
 
 .map-search-box {
@@ -151,6 +157,119 @@ html, body {
     text-align: center;
     color: rgba(255,255,255,.3);
     font-size: 13px;
+    font-family: var(--font);
+}
+
+/* ── باکس انتخاب شهر ────────────────────────────────────── */
+.city-select-box {
+    pointer-events: all;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.14);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border: 1px solid rgba(0,0,0,0.22);
+    border-radius: 14px;
+    padding: 0 14px;
+    height: 44px;
+    min-width: 150px;
+    cursor: pointer;
+    transition: background .2s, border-color .2s;
+    user-select: none;
+}
+.city-select-box:hover,
+.city-select-box.open {
+    background: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.4);
+}
+
+.city-select-icon { color: rgba(11,7,7,.55); font-size: 13px; flex-shrink: 0; }
+
+.city-select-label {
+    flex: 1;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: rgba(0,0,0,.75);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.city-select-arrow {
+    color: rgba(0,0,0,.4);
+    font-size: 10px;
+    transition: transform .2s;
+    flex-shrink: 0;
+}
+.city-select-box.open .city-select-arrow { transform: rotate(180deg); }
+
+.city-select-dropdown {
+    pointer-events: all;
+    width: 260px;
+    align-self: flex-end;
+    background: rgba(15,23,48,0.92);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    margin-top: 8px;
+    overflow: hidden;
+    display: none;
+}
+.city-select-dropdown.open { display: block; }
+
+.city-select-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.city-select-search i { color: rgba(255,255,255,.3); font-size: 12px; flex-shrink: 0; }
+.city-select-search input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: rgba(255,255,255,.9);
+    font-family: var(--font);
+    font-size: 12.5px;
+}
+.city-select-search input::placeholder { color: rgba(255,255,255,.3); }
+
+.city-select-list {
+    max-height: 260px;
+    overflow-y: auto;
+}
+.city-select-list::-webkit-scrollbar { width: 3px; }
+.city-select-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+.city-select-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    font-size: 12.5px;
+    color: rgba(255,255,255,.75);
+    cursor: pointer;
+    transition: background .12s;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.city-select-item:last-child { border-bottom: none; }
+.city-select-item:hover { background: rgba(255,255,255,0.07); }
+.city-select-item.active {
+    background: rgba(201,168,76,0.12);
+    color: var(--gold);
+    font-weight: 700;
+}
+.city-select-item i { font-size: 11px; opacity: .6; width: 14px; text-align: center; flex-shrink: 0; }
+
+.city-select-empty {
+    padding: 16px;
+    text-align: center;
+    color: rgba(255,255,255,.3);
+    font-size: 12px;
     font-family: var(--font);
 }
 
@@ -594,9 +713,9 @@ html, body {
     flex-shrink: 0;
     transition: background .15s;
 }
-.panel-search-clear:hover { background: rgba(255,255,255,0.2); } 
+.panel-search-clear:hover { background: rgba(255,255,255,0.2); }
+
 /* ── پرداخت‌ها ────────────────────────────────────────────── */
-/* اضافه کردن به انتهای فایل style.css */
 
 /* تب‌های پرداخت */
 .payment-tabs {
@@ -791,260 +910,6 @@ html, body {
     color: rgba(255,255,255,0.3);
 }
 
-.payment-description {
-    color: rgba(255,255,255,0.2);
-    font-style: italic;
-    max-width: 120px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.payment-confirm-btn {
-    background: rgba(16,185,129,0.15);
-    color: #10b981;
-    border: 1px solid rgba(16,185,129,0.2);
-    padding: 3px 14px;
-    border-radius: 20px;
-    font-size: 11px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-family: var(--font);
-}
-
-.payment-confirm-btn:hover {
-    background: rgba(16,185,129,0.25);
-    transform: scale(1.05);
-}
-
-/* ── مودال پرداخت ────────────────────────────────────── */
-.payment-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 10000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-}
-
-.payment-modal.open {
-    display: flex;
-}
-
-.payment-modal-backdrop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(5,8,18,0.75);
-    backdrop-filter: blur(6px);
-}
-
-.payment-modal-content {
-    position: relative;
-    background: var(--navy-dark);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    max-width: 600px;
-    width: 95%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    animation: modalSlideIn 0.3s ease;
-}
-
-.payment-modal-content::-webkit-scrollbar {
-    width: 3px;
-}
-
-.payment-modal-content::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.08);
-    border-radius: 2px;
-}
-
-@keyframes modalSlideIn {
-    from { transform: translateY(30px) scale(0.95); opacity: 0; }
-    to { transform: translateY(0) scale(1); opacity: 1; }
-}
-
-.payment-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--glass-border);
-    background: rgba(0,0,0,0.2);
-    border-radius: 16px 16px 0 0;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-
-.payment-modal-header h3 {
-    margin: 0;
-    font-size: 19px;
-    color: var(--gold);
-}
-
-.payment-modal-close {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid var(--glass-border);
-    font-size: 20px;
-    color: rgba(255,255,255,0.5);
-    cursor: pointer;
-    padding: 4px 12px;
-    border-radius: 8px;
-    transition: all 0.2s;
-}
-
-.payment-modal-close:hover {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-}
-
-.payment-modal-body {
-    padding: 24px;
-}
-
-.payment-modal-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
-}
-
-.payment-modal-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.payment-modal-item.full-width {
-    grid-column: 1 / -1;
-}
-
-.payment-modal-item label {
-    font-size: 12px;
-    color: rgba(255,255,255,0.3);
-    font-weight: 500;
-    letter-spacing: 0.3px;
-}
-
-.payment-modal-item span,
-.payment-modal-item p {
-    font-size: 14px;
-    color: rgba(255,255,255,0.85);
-}
-
-.payment-modal-footer {
-    padding: 16px 24px 24px;
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-    border-top: 1px solid var(--glass-border);
-    position: sticky;
-    bottom: 0;
-    background: var(--navy-dark);
-    border-radius: 0 0 16px 16px;
-}
-
-.payment-modal-btn {
-    padding: 10px 24px;
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: var(--font);
-}
-
-.payment-modal-btn.confirm-btn {
-    background: rgba(16,185,129,0.15);
-    border: 1px solid rgba(16,185,129,0.2);
-    color: #10b981;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.payment-modal-btn.confirm-btn:hover {
-    background: rgba(16,185,129,0.25);
-    transform: scale(1.02);
-}
-
-.payment-modal-btn.confirm-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.payment-modal-btn.close-btn {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid var(--glass-border);
-    color: rgba(255,255,255,0.5);
-}
-
-.payment-modal-btn.close-btn:hover {
-    background: rgba(255,255,255,0.1);
-}
-
-.payment-confirmed-by {
-    display: block;
-    font-size: 12px;
-    color: rgba(255,255,255,0.3);
-    margin-top: 2px;
-}
-
-.payment-confirmed-at {
-    display: block;
-    font-size: 11px;
-    color: rgba(255,255,255,0.2);
-    margin-top: 1px;
-}
-
-/* ── واکنش‌گرایی ────────────────────────────────────── */
-@media (max-width: 600px) {
-    .payment-modal-row {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-    
-    .payment-card-body {
-        flex-direction: column;
-        gap: 4px;
-    }
-    
-    .payment-card-footer {
-        flex-direction: column;
-        gap: 4px;
-        align-items: stretch;
-    }
-    
-    .payment-confirm-btn {
-        width: 100%;
-        justify-content: center;
-        padding: 6px;
-    }
-    
-    .payment-tabs {
-        flex-direction: column;
-        gap: 4px;
-    }
-    
-    .payment-description {
-        max-width: 100%;
-    }
-}
-/* static/css/style.css - اضافه کردن به بخش پرداخت‌ها */
-
 .payment-check-due {
     font-size: 12px;
     color: rgba(255,255,255,0.4);
@@ -1075,22 +940,359 @@ html, body {
     max-width: 150px;
 }
 
-/* در مودال - برای تاریخ سررسید چک */
-.payment-modal-check-due {
-    background: rgba(201,168,76,0.06);
-    border: 1px solid rgba(201,168,76,0.1);
-    border-radius: 6px;
-    padding: 8px 12px;
-    margin-top: 4px;
+.payment-confirm-btn {
+    background: rgba(16,185,129,0.15);
+    color: #10b981;
+    border: 1px solid rgba(16,185,129,0.2);
+    padding: 3px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font);
 }
 
-.payment-modal-check-due label {
-    color: var(--gold) !important;
+.payment-confirm-btn:hover {
+    background: rgba(16,185,129,0.25);
+    transform: scale(1.05);
+}
+
+/* ══════════════════════════════════════════════════════════
+   مودال پرداخت (بازطراحی)
+   ══════════════════════════════════════════════════════════ */
+.payment-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.payment-modal.open {
+    display: flex;
+}
+
+.payment-modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(5,8,18,0.75);
+    backdrop-filter: blur(6px);
+}
+
+.payment-modal-content {
+    position: relative;
+    background: var(--navy-dark);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    max-width: 560px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.55);
+    animation: modalSlideIn 0.3s ease;
+}
+
+.payment-modal-content::-webkit-scrollbar { width: 3px; }
+.payment-modal-content::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+}
+
+@keyframes modalSlideIn {
+    from { transform: translateY(30px) scale(0.95); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ── هیرو (هدر گرادیانی) ─────────────────────────────── */
+.payment-modal-hero {
+    position: relative;
+    padding: 26px 24px 22px;
+    border-radius: 20px 20px 0 0;
+    background: linear-gradient(135deg, rgba(245,158,11,.22), rgba(245,158,11,.06));
+    border-bottom: 1px solid var(--glass-border);
+}
+.payment-modal-hero.confirmed {
+    background: linear-gradient(135deg, rgba(16,185,129,.22), rgba(16,185,129,.06));
+}
+
+.payment-modal-hero-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 18px;
+}
+
+.payment-modal-close {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--glass-border);
+    color: rgba(255,255,255,0.7);
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .2s;
+    flex-shrink: 0;
+}
+.payment-modal-close:hover { background: rgba(255,255,255,0.16); color:#fff; }
+
+.payment-modal-customer-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: rgba(255,255,255,.95);
+}
+.payment-modal-customer-code {
+    font-size: 12px;
+    color: rgba(255,255,255,.4);
+    margin-top: 3px;
+}
+
+.payment-modal-amount-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+.payment-modal-amount-value {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--gold);
+    letter-spacing: -.5px;
+}
+.payment-modal-amount-unit {
+    font-size: 13px;
+    color: rgba(255,255,255,.4);
+}
+
+.payment-modal-status-pill {
+    position: absolute;
+    top: 26px; left: 24px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.payment-modal-status-pill.pending {
+    background: rgba(245,158,11,.16);
+    color: #f59e0b;
+    border: 1px solid rgba(245,158,11,.3);
+}
+.payment-modal-status-pill.confirmed {
+    background: rgba(16,185,129,.16);
+    color: #10b981;
+    border: 1px solid rgba(16,185,129,.3);
+}
+
+/* ── بدنه مودال ──────────────────────────────────────── */
+.payment-modal-body { padding: 20px 24px; }
+
+.payment-modal-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.payment-modal-info-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+}
+.payment-modal-info-card.full { grid-column: 1 / -1; }
+
+.payment-modal-info-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: rgba(255,255,255,.35);
+    margin-bottom: 5px;
+}
+.payment-modal-info-label i { color: rgba(201,168,76,.5); font-size: 11px; }
+
+.payment-modal-info-value {
+    font-size: 13.5px;
+    color: rgba(255,255,255,.9);
+    font-weight: 600;
+}
+
+/* توضیحات - جعبه‌ی جدا و واضح */
+.payment-modal-desc-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px dashed var(--glass-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+}
+.payment-modal-desc-text {
+    font-size: 13px;
+    line-height: 1.9;
+    color: rgba(255,255,255,.75);
+}
+
+/* تصویر رسید */
+.payment-modal-image-box {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+    background: rgba(255,255,255,0.02);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+}
+.payment-modal-image-box img {
+    width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+}
+
+/* تاییدکننده */
+.payment-modal-confirmed-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(16,185,129,.08);
+    border: 1px solid rgba(16,185,129,.2);
+    border-radius: 10px;
+    padding: 9px 13px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #10b981;
+}
+
+/* ── فوتر ────────────────────────────────────────────── */
+.payment-modal-footer {
+    padding: 16px 24px 22px;
+    display: flex;
+    gap: 10px;
+    border-top: 1px solid var(--glass-border);
+    position: sticky;
+    bottom: 0;
+    background: var(--navy-dark);
+    border-radius: 0 0 20px 20px;
+}
+
+.payment-modal-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    font-family: var(--font);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.payment-modal-btn.confirm-btn {
+    background: rgba(16,185,129,.16);
+    border: 1px solid rgba(16,185,129,.3);
+    color: #10b981;
+}
+.payment-modal-btn.confirm-btn:hover { background: rgba(16,185,129,.26); transform: translateY(-1px); }
+.payment-modal-btn.confirm-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+.payment-modal-btn.close-btn {
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--glass-border);
+    color: rgba(255,255,255,.6);
+    flex: none;
+    padding: 12px 20px;
+}
+.payment-modal-btn.close-btn:hover { background: rgba(255,255,255,.1); }
+
+/* ── toast عمومی برنامه ─────────────────────────────── */
+.app-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(15,23,48,0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    color: rgba(255,255,255,.9);
+    font-size: 13px;
+    font-family: var(--font);
+    padding: 12px 20px;
+    border-radius: 12px;
+    z-index: 20000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s, transform .25s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+.app-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+.app-toast i { color: var(--gold); }
+
+/* ── واکنش‌گرایی ────────────────────────────────────── */
+@media (max-width: 600px) {
+    .payment-modal-info-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .payment-card-body {
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+    }
+
+    .payment-card-footer {
+        flex-direction: column;
+        gap: 4px;
+        align-items: stretch;
+    }
+
+    .payment-confirm-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 6px;
+    }
+
+    .payment-tabs {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .payment-description {
+        max-width: 100%;
+    }
+
+    .payment-modal-amount-value { font-size: 26px; }
 }
 
 @media (max-width: 768px) {
     :root { --panel-w: 240px; }
     .map-search-wrap { right: var(--panel-w); }
-    .map-search-box, .map-search-results { width: 260px; }
+    .map-search-box, .map-search-results { width: 220px; }
+    .city-select-box { min-width: 110px; }
+    .city-select-dropdown { width: 220px; }
     .photo-modal-grid { grid-template-columns: repeat(2, 1fr); }
 }

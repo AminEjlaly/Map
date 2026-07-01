@@ -501,175 +501,59 @@ function renderPaymentCard(payment, status, index) {
         </div>
     `;
 }
-
-
-/* ── مودال پرداخت ────────────────────────────────────── */
-// static/js/script.js - اصلاح تابع openPaymentModal
-
-function openPaymentModal(payment) {
-    let modal = document.getElementById('paymentModal');
-    if (!modal) {
-        createPaymentModal();
-        modal = document.getElementById('paymentModal');
-    }
-    
-    // تبدیل نوع پرداخت
-    const paymentTypeMap = {
-        'pos': { label: 'پوز', icon: 'fa-credit-card' },
-        'transfer': { label: 'حواله', icon: 'fa-exchange-alt' },
-        'check': { label: 'چک', icon: 'fa-file-invoice' },
-        'cash': { label: 'نقدی', icon: 'fa-money-bill-wave' }
-    };
-    
-    const paymentTypeLower = payment.PaymentType?.toLowerCase() || 'cash';
-    const typeInfo = paymentTypeMap[paymentTypeLower] || paymentTypeMap['cash'];
-    
-    // شماره‌های مربوطه
-    let referenceInfo = '';
-    let checkDueDateInfo = '';
-    
-    if (paymentTypeLower === 'check') {
-        referenceInfo = `<div class="payment-modal-item">
-            <label>📋 شماره سیادی</label>
-            <span>${payment.SayyadiNumber || 'ثبت نشده'}</span>
-        </div>`;
-        if (payment.CheckDueDate) {
-            checkDueDateInfo = `<div class="payment-modal-item">
-                <label>📅 تاریخ سررسید چک</label>
-                <span>${payment.CheckDueDate}</span>
-            </div>`;
-        }
-    } else if (paymentTypeLower === 'transfer') {
-        referenceInfo = `<div class="payment-modal-item">
-            <label>📋 شماره حواله</label>
-            <span>${payment.SerialNumber || 'ثبت نشده'}</span>
-        </div>`;
-    } else if (paymentTypeLower === 'pos') {
-        referenceInfo = `<div class="payment-modal-item">
-            <label>📋 شماره پیگیری</label>
-            <span>${payment.SerialNumber || 'ثبت نشده'}</span>
-        </div>`;
-    }
-    
-    // پر کردن اطلاعات
-    document.getElementById('paymentModalCustomer').textContent = payment.CustomerName;
-    document.getElementById('paymentModalCode').textContent = `کد مشتری: ${payment.CustomerCode}`;
-    document.getElementById('paymentModalAmount').textContent = payment.Amount.toLocaleString('fa-IR') + ' تومان';
-    document.getElementById('paymentModalType').innerHTML = `<i class="fas ${typeInfo.icon}"></i> ${typeInfo.label}`;
-    document.getElementById('paymentModalDelivery').textContent = payment.DeliveryName || 'نامشخص';
-    document.getElementById('paymentModalDate').textContent = payment.RegisterDateSh || 'تاریخ نامشخص';
-    document.getElementById('paymentModalDesc').textContent = payment.Description || 'توضیحاتی ثبت نشده';
-    
-    // نمایش شماره مرجع
-    const refContainer = document.getElementById('paymentModalReference');
-    if (referenceInfo || checkDueDateInfo) {
-        let html = '';
-        if (referenceInfo) html += referenceInfo;
-        if (checkDueDateInfo) html += checkDueDateInfo;
-        refContainer.innerHTML = html;
-        refContainer.style.display = 'grid';
-    } else {
-        refContainer.style.display = 'none';
-    }
-    
-    // نمایش وضعیت
-    const statusBadge = document.getElementById('paymentModalStatus');
-    if (payment.IsConfirmed === true) {
-        statusBadge.innerHTML = `
-            <span class="payment-status-badge confirmed">✅ تایید شده</span>
-            <span class="payment-confirmed-by">تایید توسط: ${payment.ConfirmedBy || 'نامشخص'}</span>
-            <span class="payment-confirmed-at">${payment.ConfirmedAt || ''}</span>
-        `;
-    } else {
-        statusBadge.innerHTML = `<span class="payment-status-badge pending">⏳ در انتظار تایید</span>`;
-    }
-    
-    // نمایش عکس - استفاده از مسیر تصحیح شده
-    const imgContainer = document.getElementById('paymentModalImage');
-    if (payment.ImagePath && payment.ImagePath !== '') {
-        // imagePath قبلاً توسط payment_photo_route_url تصحیح شده
-        // و الان به صورت /payment-photos/filename.jpg است
-        imgContainer.innerHTML = `
-            <img src="${payment.ImagePath}" 
-                 alt="تصویر رسید" 
-                 style="max-width:100%; max-height:300px; border-radius:8px; object-fit:contain;"
-                 onerror="this.parentElement.innerHTML='<p style=\\'color:#999; text-align:center;\\'>❌ تصویر بارگذاری نشد</p>'">
-        `;
-    } else {
-        imgContainer.innerHTML = '<p style="color:#999; text-align:center;">📷 تصویری برای این پرداخت ثبت نشده است</p>';
-    }
-    
-    // دکمه تایید
-    const confirmBtn = document.getElementById('paymentModalConfirmBtn');
-    if (payment.IsConfirmed === true) {
-        confirmBtn.style.display = 'none';
-    } else {
-        confirmBtn.style.display = 'flex';
-        confirmBtn.dataset.paymentId = payment.PaymentID;
-        confirmBtn.onclick = () => confirmPaymentFromModal(payment.PaymentID);
-    }
-    
-    modal.classList.add('open');
-}
-
 function createPaymentModal() {
     const modalHTML = `
         <div class="payment-modal" id="paymentModal">
             <div class="payment-modal-backdrop" onclick="closePaymentModal()"></div>
             <div class="payment-modal-content">
-                <div class="payment-modal-header">
-                    <div>
-                        <h3 id="paymentModalCustomer">نام مشتری</h3>
-                        <span id="paymentModalCode" style="font-size:14px; color:#999;">کد: -</span>
+
+                <div class="payment-modal-hero" id="paymentModalHero">
+                    <span class="payment-modal-status-pill" id="paymentModalStatusPill"></span>
+                    <div class="payment-modal-hero-top">
+                        <div>
+                            <div class="payment-modal-customer-name" id="paymentModalCustomer">نام مشتری</div>
+                            <div class="payment-modal-customer-code" id="paymentModalCode">کد: -</div>
+                        </div>
+                        <button class="payment-modal-close" onclick="closePaymentModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
-                    <button class="payment-modal-close" onclick="closePaymentModal()">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <div class="payment-modal-amount-row">
+                        <span class="payment-modal-amount-value" id="paymentModalAmount">-</span>
+                        <span class="payment-modal-amount-unit"></span>
+                    </div>
                 </div>
-                
+
                 <div class="payment-modal-body">
-                    <div class="payment-modal-row">
-                        <div class="payment-modal-item">
-                            <label>💰 مبلغ</label>
-                            <span id="paymentModalAmount">-</span>
+                    <div class="payment-modal-info-grid">
+                        <div class="payment-modal-info-card">
+                            <div class="payment-modal-info-label"><i class="fas fa-wallet"></i> نوع پرداخت</div>
+                            <div class="payment-modal-info-value" id="paymentModalType">-</div>
                         </div>
-                        <div class="payment-modal-item">
-                            <label>📋 نوع پرداخت</label>
-                            <span id="paymentModalType">-</span>
+                        <div class="payment-modal-info-card">
+                            <div class="payment-modal-info-label"><i class="fas fa-user"></i> ثبت کننده</div>
+                            <div class="payment-modal-info-value" id="paymentModalDelivery">-</div>
                         </div>
-                    </div>
-                    
-                    <div class="payment-modal-row">
-                        <div class="payment-modal-item">
-                            <label>👤 ثبت کننده</label>
-                            <span id="paymentModalDelivery">-</span>
+                        <div class="payment-modal-info-card full">
+                            <div class="payment-modal-info-label"><i class="far fa-calendar-alt"></i> تاریخ ثبت</div>
+                            <div class="payment-modal-info-value" id="paymentModalDate">-</div>
                         </div>
-                        <div class="payment-modal-item">
-                            <label>📅 تاریخ ثبت</label>
-                            <span id="paymentModalDate">-</span>
-                        </div>
+                        <div id="paymentModalReference" class="payment-modal-info-card full" style="display:none"></div>
                     </div>
-                    
-                    <div id="paymentModalReference" class="payment-modal-row" style="display:none;">
-                        <!-- داینامیک پر می‌شود -->
+
+                    <div class="payment-modal-desc-box">
+                        <div class="payment-modal-info-label"><i class="fas fa-align-right"></i> توضیحات</div>
+                        <p class="payment-modal-desc-text" id="paymentModalDesc"></p>
                     </div>
-                    
-                    <div class="payment-modal-item full-width">
-                        <label>📝 توضیحات</label>
-                        <p id="paymentModalDesc" style="margin:0; padding:10px; background:rgba(255,255,255,0.05); border-radius:6px; color:rgba(255,255,255,0.8);"></p>
+
+                    <div class="payment-modal-info-label" style="margin-bottom:8px">
+                        <i class="fas fa-image"></i> تصویر رسید
                     </div>
-                    
-                    <div class="payment-modal-item full-width">
-                        <label>📸 تصویر رسید</label>
-                        <div id="paymentModalImage" style="display:flex; justify-content:center; padding:10px 0;"></div>
-                    </div>
-                    
-                    <div class="payment-modal-item full-width">
-                        <label>📌 وضعیت</label>
-                        <div id="paymentModalStatus"></div>
-                    </div>
+                    <div class="payment-modal-image-box" id="paymentModalImage"></div>
+
+                    <div id="paymentModalConfirmedInfo"></div>
                 </div>
-                
+
                 <div class="payment-modal-footer">
                     <button class="payment-modal-btn confirm-btn" id="paymentModalConfirmBtn">
                         <i class="fas fa-check"></i> تایید پرداخت
@@ -679,8 +563,103 @@ function createPaymentModal() {
             </div>
         </div>
     `;
-    
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function openPaymentModal(payment) {
+    let modal = document.getElementById('paymentModal');
+    if (!modal) {
+        createPaymentModal();
+        modal = document.getElementById('paymentModal');
+    }
+
+    const paymentTypeMap = {
+        'pos':      { label: 'پوز',   icon: 'fa-credit-card' },
+        'transfer': { label: 'حواله', icon: 'fa-exchange-alt' },
+        'check':    { label: 'چک',    icon: 'fa-file-invoice' },
+        'cash':     { label: 'نقدی',  icon: 'fa-money-bill-wave' }
+    };
+    const paymentTypeLower = payment.PaymentType?.toLowerCase() || 'cash';
+    const typeInfo = paymentTypeMap[paymentTypeLower] || paymentTypeMap['cash'];
+
+    // هیرو + وضعیت
+    const hero = document.getElementById('paymentModalHero');
+    const pill = document.getElementById('paymentModalStatusPill');
+    hero.classList.toggle('confirmed', payment.IsConfirmed === true);
+    if (payment.IsConfirmed === true) {
+        pill.className = 'payment-modal-status-pill confirmed';
+        pill.innerHTML = '<i class="fas fa-check-circle"></i> تایید شده';
+    } else {
+        pill.className = 'payment-modal-status-pill pending';
+        pill.innerHTML = '<i class="fas fa-clock"></i> در انتظار تایید';
+    }
+
+    document.getElementById('paymentModalCustomer').textContent = payment.CustomerName;
+    document.getElementById('paymentModalCode').textContent     = `کد مشتری: ${payment.CustomerCode}`;
+    document.getElementById('paymentModalAmount').textContent   = payment.Amount.toLocaleString('fa-IR');
+    document.getElementById('paymentModalType').innerHTML       = `<i class="fas ${typeInfo.icon}"></i> ${typeInfo.label}`;
+    document.getElementById('paymentModalDelivery').textContent = payment.DeliveryName || 'نامشخص';
+    document.getElementById('paymentModalDate').textContent     = payment.RegisterDateSh || 'تاریخ نامشخص';
+    document.getElementById('paymentModalDesc').textContent     = payment.Description || 'توضیحاتی ثبت نشده';
+
+    // شماره مرجع
+    let referenceHtml = '';
+    if (paymentTypeLower === 'check') {
+        referenceHtml = `<div class="payment-modal-info-label"><i class="fas fa-hashtag"></i> شماره سیادی</div>
+            <div class="payment-modal-info-value">${payment.SayyadiNumber || 'ثبت نشده'}</div>`;
+        if (payment.CheckDueDate) {
+            referenceHtml += `<div class="payment-modal-info-label" style="margin-top:10px"><i class="far fa-calendar-check"></i> تاریخ سررسید چک</div>
+                <div class="payment-modal-info-value">${payment.CheckDueDate}</div>`;
+        }
+    } else if (paymentTypeLower === 'transfer') {
+        referenceHtml = `<div class="payment-modal-info-label"><i class="fas fa-hashtag"></i> شماره حواله</div>
+            <div class="payment-modal-info-value">${payment.SerialNumber || 'ثبت نشده'}</div>`;
+    } else if (paymentTypeLower === 'pos') {
+        referenceHtml = `<div class="payment-modal-info-label"><i class="fas fa-hashtag"></i> شماره پیگیری</div>
+            <div class="payment-modal-info-value">${payment.SerialNumber || 'ثبت نشده'}</div>`;
+    }
+    const refContainer = document.getElementById('paymentModalReference');
+    if (referenceHtml) {
+        refContainer.innerHTML = referenceHtml;
+        refContainer.style.display = 'block';
+    } else {
+        refContainer.style.display = 'none';
+    }
+
+    // اطلاعات تاییدکننده
+    const confirmedInfo = document.getElementById('paymentModalConfirmedInfo');
+    if (payment.IsConfirmed === true) {
+        confirmedInfo.innerHTML = `
+            <div class="payment-modal-confirmed-info">
+                <i class="fas fa-user-check"></i>
+                تایید توسط ${payment.ConfirmedBy || 'نامشخص'} — ${payment.ConfirmedAt || ''}
+            </div>`;
+    } else {
+        confirmedInfo.innerHTML = '';
+    }
+
+    // تصویر
+    const imgContainer = document.getElementById('paymentModalImage');
+    if (payment.ImagePath) {
+        imgContainer.innerHTML = `
+            <img src="${payment.ImagePath}" alt="تصویر رسید"
+                 onerror="this.parentElement.innerHTML='<p style=\\'color:#999;text-align:center;padding:20px;font-size:12px\\'>❌ تصویر بارگذاری نشد</p>'">`;
+    } else {
+        imgContainer.innerHTML = '<p style="color:rgba(255,255,255,.3);text-align:center;padding:20px;font-size:12px">📷 تصویری برای این پرداخت ثبت نشده است</p>';
+    }
+
+    // دکمه تایید
+    const confirmBtn = document.getElementById('paymentModalConfirmBtn');
+    if (payment.IsConfirmed === true) {
+        confirmBtn.style.display = 'none';
+    } else {
+        confirmBtn.style.display = 'flex';
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fas fa-check"></i> تایید پرداخت';
+        confirmBtn.onclick = () => confirmPaymentFromModal(payment.PaymentID);
+    }
+
+    modal.classList.add('open');
 }
 
 function closePaymentModal() {
@@ -747,6 +726,7 @@ async function quickConfirmPayment(paymentId) {
         console.error(e);
     }
 }
+
 
 /* ── utils ─────────────────────────────────────────────── */
 function toFa(n) {
