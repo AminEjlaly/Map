@@ -1,3 +1,4 @@
+#database/queries.py
 from database.connection import DatabaseConnection
 
 _db = DatabaseConnection()
@@ -151,3 +152,131 @@ def get_new_customers(limit: int = 50) -> list:
     except Exception as e:
         print(f"❌ get_new_customers: {e}")
         return []
+# database/queries.py - اضافه کردن به انتهای فایل
+def get_payments_with_status() -> dict:
+    """دریافت لیست پرداخت‌ها با دسته‌بندی تایید شده/در انتظار"""
+    query = """
+        SELECT 
+            PaymentID,
+            CustomerCode,
+            CustomerName,
+            DeliveryUserID,
+            DeliveryName,
+            PaymentType,
+            Amount,
+            SerialNumber,
+            CheckDueDate,
+            SayyadiNumber,
+            ImagePath,
+            RegisterDateSh,
+            RegisterDatetime,
+            Description,
+            IsConfirmed,
+            ConfirmedBy,
+            ConfirmedAt
+        FROM CustomerPayments
+        ORDER BY 
+            CASE WHEN IsConfirmed = 0 THEN 0 ELSE 1 END,
+            RegisterDatetime DESC
+    """
+    
+    try:
+        with _db.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(query)
+            rows = cur.fetchall()
+            
+            pending = []
+            confirmed = []
+            
+            for r in rows:
+                # تبدیل صحیح Boolean
+                is_confirmed = False
+                if r[13] is not None:
+                    if isinstance(r[13], bool):
+                        is_confirmed = r[13]
+                    elif isinstance(r[13], (int, float)):
+                        is_confirmed = bool(r[13])
+                    elif isinstance(r[13], str):
+                        is_confirmed = r[13].lower() in ('1', 'true', 'yes')
+                
+                # تبدیل تاریخ‌ها به رشته
+                register_date = str(r[11]) if r[11] else ""
+                confirmed_at = str(r[16]) if r[16] else ""
+                check_due_date = str(r[8]) if r[8] else ""
+                
+                payment = {
+                    "PaymentID": int(r[0]) if r[0] else 0,
+                    "CustomerCode": str(r[1]) if r[1] else "",
+                    "CustomerName": str(r[2]) if r[2] else "بدون نام",
+                    "DeliveryUserID": str(r[3]) if r[3] else "",
+                    "DeliveryName": str(r[4]) if r[4] else "نامشخص",
+                    "PaymentType": str(r[5]) if r[5] else "cash",
+                    "Amount": int(r[6]) if r[6] else 0,
+                    "SerialNumber": str(r[7]) if r[7] else "",
+                    "CheckDueDate": check_due_date,
+                    "SayyadiNumber": str(r[9]) if r[9] else "",
+                    "ImagePath": str(r[10]) if r[10] else "",
+                    "RegisterDateSh": register_date,
+                    "RegisterDatetime": str(r[11]) if r[11] else "",
+                    "Description": str(r[12]) if r[12] else "",
+                    "IsConfirmed": is_confirmed,
+                    "ConfirmedBy": str(r[14]) if r[14] else "",
+                    "ConfirmedAt": confirmed_at
+                }
+                
+                if payment["IsConfirmed"]:
+                    confirmed.append(payment)
+                else:
+                    pending.append(payment)
+            
+            return {
+                "success": True,
+                "pending": pending,
+                "confirmed": confirmed,
+                "total_pending": len(pending),
+                "total_confirmed": len(confirmed)
+            }
+            
+    except Exception as e:
+        print(f"❌ get_payments_with_status: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "success": False,
+            "pending": [],
+            "confirmed": [],
+            "total_pending": 0,
+            "total_confirmed": 0,
+            "error": str(e)
+        }
+
+
+# database/queries.py - اصلاح تابع confirm_payment
+
+def confirm_payment(payment_id: int, confirmed_by: str) -> dict:
+    """تایید یک پرداخت"""
+    # استفاده از ? به جای %s برای pyodbc
+    query = """
+        UPDATE CustomerPayments
+        SET 
+            IsConfirmed = 1,
+            ConfirmedBy = ?,
+            ConfirmedAt = GETDATE()
+        WHERE PaymentID = ? AND IsConfirmed = 0
+    """
+    
+    try:
+        with _db.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(query, (confirmed_by, payment_id))
+            conn.commit()
+            
+            if cur.rowcount > 0:
+                return {"success": True, "message": "پرداخت با موفقیت تایید شد"}
+            else:
+                return {"success": False, "message": "پرداخت قبلاً تایید شده یا وجود ندارد"}
+                
+    except Exception as e:
+        print(f"❌ confirm_payment: {e}")
+        return {"success": False, "message": f"خطا در تایید پرداخت: {str(e)}"}

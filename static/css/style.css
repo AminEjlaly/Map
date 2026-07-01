@@ -1,3 +1,5 @@
+
+/*static/style.css*/
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -593,7 +595,498 @@ html, body {
     transition: background .15s;
 }
 .panel-search-clear:hover { background: rgba(255,255,255,0.2); } 
+/* ── پرداخت‌ها ────────────────────────────────────────────── */
+/* اضافه کردن به انتهای فایل style.css */
 
+/* تب‌های پرداخت */
+.payment-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 4px 12px 4px;
+    border-bottom: 1px solid var(--glass-border);
+    margin-bottom: 12px;
+}
+
+.payment-tab {
+    flex: 1;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    color: rgba(255,255,255,0.4);
+    font-size: 13px;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.payment-tab:hover {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.6);
+}
+
+.payment-tab.active {
+    background: rgba(201,168,76,0.12);
+    border-color: rgba(201,168,76,0.3);
+    color: var(--gold);
+}
+
+.payment-tab-badge {
+    background: rgba(255,255,255,0.06);
+    padding: 1px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+}
+
+.payment-tab.active .payment-tab-badge {
+    background: rgba(201,168,76,0.15);
+    color: var(--gold);
+}
+
+.payment-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* کارت‌های پرداخت */
+.payment-card {
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-right: 4px solid rgba(255,255,255,0.05);
+}
+
+.payment-card:hover {
+    background: rgba(255,255,255,0.07);
+    transform: translateX(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.payment-card.pending {
+    border-right-color: #f59e0b;
+    background: rgba(245,158,11,0.05);
+}
+
+.payment-card.pending:hover {
+    background: rgba(245,158,11,0.09);
+}
+
+.payment-card.confirmed {
+    border-right-color: #10b981;
+    background: rgba(16,185,129,0.05);
+}
+
+.payment-card.confirmed:hover {
+    background: rgba(16,185,129,0.09);
+}
+
+.payment-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.payment-customer-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: rgba(255,255,255,0.9);
+}
+
+.payment-customer-code {
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    margin-right: 8px;
+}
+
+.payment-status-badge {
+    padding: 2px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.payment-status-badge.pending {
+    background: rgba(245,158,11,0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245,158,11,0.15);
+}
+
+.payment-status-badge.confirmed {
+    background: rgba(16,185,129,0.15);
+    color: #10b981;
+    border: 1px solid rgba(16,185,129,0.15);
+}
+
+.payment-card-body {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.payment-amount {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.payment-amount i {
+    color: rgba(201,168,76,0.4);
+    font-size: 14px;
+}
+
+.payment-type {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.payment-type i {
+    color: rgba(255,255,255,0.3);
+}
+
+.payment-reference {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.payment-reference i {
+    color: rgba(255,255,255,0.2);
+}
+
+.payment-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8px;
+    border-top: 1px solid var(--glass-border);
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.payment-delivery {
+    color: rgba(255,255,255,0.3);
+}
+
+.payment-description {
+    color: rgba(255,255,255,0.2);
+    font-style: italic;
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.payment-confirm-btn {
+    background: rgba(16,185,129,0.15);
+    color: #10b981;
+    border: 1px solid rgba(16,185,129,0.2);
+    padding: 3px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font);
+}
+
+.payment-confirm-btn:hover {
+    background: rgba(16,185,129,0.25);
+    transform: scale(1.05);
+}
+
+/* ── مودال پرداخت ────────────────────────────────────── */
+.payment-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.payment-modal.open {
+    display: flex;
+}
+
+.payment-modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(5,8,18,0.75);
+    backdrop-filter: blur(6px);
+}
+
+.payment-modal-content {
+    position: relative;
+    background: var(--navy-dark);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    max-width: 600px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: modalSlideIn 0.3s ease;
+}
+
+.payment-modal-content::-webkit-scrollbar {
+    width: 3px;
+}
+
+.payment-modal-content::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+}
+
+@keyframes modalSlideIn {
+    from { transform: translateY(30px) scale(0.95); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.payment-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--glass-border);
+    background: rgba(0,0,0,0.2);
+    border-radius: 16px 16px 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.payment-modal-header h3 {
+    margin: 0;
+    font-size: 19px;
+    color: var(--gold);
+}
+
+.payment-modal-close {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    font-size: 20px;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.payment-modal-close:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+.payment-modal-body {
+    padding: 24px;
+}
+
+.payment-modal-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.payment-modal-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.payment-modal-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.payment-modal-item label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.payment-modal-item span,
+.payment-modal-item p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.85);
+}
+
+.payment-modal-footer {
+    padding: 16px 24px 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    border-top: 1px solid var(--glass-border);
+    position: sticky;
+    bottom: 0;
+    background: var(--navy-dark);
+    border-radius: 0 0 16px 16px;
+}
+
+.payment-modal-btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: var(--font);
+}
+
+.payment-modal-btn.confirm-btn {
+    background: rgba(16,185,129,0.15);
+    border: 1px solid rgba(16,185,129,0.2);
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.payment-modal-btn.confirm-btn:hover {
+    background: rgba(16,185,129,0.25);
+    transform: scale(1.02);
+}
+
+.payment-modal-btn.confirm-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.payment-modal-btn.close-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    color: rgba(255,255,255,0.5);
+}
+
+.payment-modal-btn.close-btn:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.payment-confirmed-by {
+    display: block;
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    margin-top: 2px;
+}
+
+.payment-confirmed-at {
+    display: block;
+    font-size: 11px;
+    color: rgba(255,255,255,0.2);
+    margin-top: 1px;
+}
+
+/* ── واکنش‌گرایی ────────────────────────────────────── */
+@media (max-width: 600px) {
+    .payment-modal-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .payment-card-body {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .payment-card-footer {
+        flex-direction: column;
+        gap: 4px;
+        align-items: stretch;
+    }
+    
+    .payment-confirm-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 6px;
+    }
+    
+    .payment-tabs {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .payment-description {
+        max-width: 100%;
+    }
+}
+/* static/css/style.css - اضافه کردن به بخش پرداخت‌ها */
+
+.payment-check-due {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.payment-check-due i {
+    color: rgba(255,255,255,0.2);
+}
+
+.payment-footer-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.payment-description {
+    color: rgba(255,255,255,0.25);
+    font-style: italic;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
+/* در مودال - برای تاریخ سررسید چک */
+.payment-modal-check-due {
+    background: rgba(201,168,76,0.06);
+    border: 1px solid rgba(201,168,76,0.1);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 4px;
+}
+
+.payment-modal-check-due label {
+    color: var(--gold) !important;
+}
 
 @media (max-width: 768px) {
     :root { --panel-w: 240px; }
