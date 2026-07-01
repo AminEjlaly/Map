@@ -108,3 +108,46 @@ def get_online_visitors_last_location() -> list:
     except Exception as e:
         print(f"❌ get_online_visitors_last_location: {e}")
         return []
+    
+def get_new_customers(limit: int = 50) -> list:
+    """آخرین مشتری‌های ثبت‌شده - هر مشتری با همه‌ی عکس‌هاش و اسم ثبت‌کننده"""
+    q = """
+        SELECT cp.buyerCode, cp.photoUrl, cp.uploadedAt, cp.uploadedBy, b.name, b.AddB
+        FROM CustomerPhotos cp
+        LEFT JOIN Buyer b ON cp.buyerCode = b.BuyerCode
+        ORDER BY cp.uploadedAt DESC
+    """
+    try:
+        with _db.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(q)
+            rows = cur.fetchall()
+
+            grouped = {}
+            order = []
+            for r in rows:
+                code = r[0]
+                if code not in grouped:
+                    grouped[code] = {
+                        "code": code,
+                        "name": r[4] or "",
+                        "address": r[5] or "",
+                        "photos": [],
+                    }
+                    order.append(code)
+
+                uploaded_at = r[2]
+                uploaded_str = (
+                    uploaded_at.strftime("%H:%M - %Y/%m/%d")
+                    if hasattr(uploaded_at, "strftime") else ""
+                )
+                grouped[code]["photos"].append({
+                    "url":        r[1],
+                    "uploadedAt": uploaded_str,
+                    "uploadedBy": r[3] or "",
+                })
+
+            return [grouped[c] for c in order][:limit]
+    except Exception as e:
+        print(f"❌ get_new_customers: {e}")
+        return []

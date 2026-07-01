@@ -49,7 +49,7 @@ html, body {
     background: rgba(255,255,255,0.14);
     backdrop-filter: var(--blur);
     -webkit-backdrop-filter: var(--blur);
-    border: 1px solid rgba(255,255,255,0.22);
+    border: 1px solid rgba(0, 0, 0, 0.22);
     border-radius: 14px;
     padding: 0 14px;
     width: 340px;
@@ -80,7 +80,7 @@ html, body {
     background: transparent;
 }
 
-.map-search-input::placeholder { color: rgba(255,255,255,0.4); }
+.map-search-input::placeholder { color: rgba(12, 11, 11, 0.4); }
 
 .map-search-clear {
     background: rgba(255,255,255,0.1);
@@ -96,7 +96,7 @@ html, body {
     flex-shrink: 0;
     transition: background .15s, color .15s;
 }
-.map-search-clear:hover { background: rgba(255,255,255,0.2); color: rgb(6, 5, 5); }
+.map-search-clear:hover { background: rgba(6, 5, 5, 0.2); color: rgb(6, 5, 5); }
 
 .map-search-results {
     pointer-events: all;
@@ -311,6 +311,7 @@ html, body {
 }
 
 /* ── کارت ویزیتور ───────────────────────────────────────── */
+
 .visitor-card {
     display: flex;
     align-items: center;
@@ -394,9 +395,209 @@ html, body {
     margin-bottom: 10px;
     color: rgba(201,168,76,0.3);
 }
+.customer-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 12px;
+    margin-bottom: 4px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    position: relative;
+    transition: background .15s;
+}
+.customer-card:hover { background: rgba(255,255,255,0.09); }
+
+.customer-info { flex: 1; min-width: 0; }
+
+.customer-name {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: rgba(255,255,255,.88);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.customer-code {
+    font-size: 10.5px;
+    color: rgba(255,255,255,.4);
+    margin-top: 2px;
+}
+
+.customer-address {
+    font-size: 10.5px;
+    color: rgba(255,255,255,.35);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.customer-photo {
+    width: 56px; height: 56px;
+    border-radius: 12px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+}
+.customer-photo.no-photo { visibility: hidden; }
+
+.customer-photo-count {
+    position: absolute;
+    top: 6px; left: 10px;
+    background: rgba(201,168,76,0.9);
+    color: #0d1526;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 20px;
+    padding: 1px 7px;
+}
+
+/* ── مودال گالری ────────────────────────────────────── */
+.photo-modal {
+    position: fixed; inset: 0;
+    z-index: 900;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.photo-modal.open { display: flex; }
+
+.photo-modal-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(5,8,18,0.7);
+    backdrop-filter: blur(4px);
+}
+
+.photo-modal-content {
+    position: relative;
+    width: min(720px, 92vw);
+    max-height: 82vh;
+    background: var(--navy-dark);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.photo-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+}
+.photo-modal-name    { font-size: 14px; font-weight: 700; color: var(--gold); }
+.photo-modal-address { font-size: 11.5px; color: rgba(255,255,255,.4); margin-top: 3px; }
+
+.photo-modal-close {
+    background: rgba(255,255,255,0.08);
+    border: none; color: #fff;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.photo-modal-close:hover { background: rgba(255,255,255,0.16); }
+
+.photo-modal-grid {
+    padding: 16px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+.photo-modal-item { position: relative; }
+.photo-modal-item img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+}
+.photo-modal-item.no-photo img { visibility: hidden; }
+.photo-modal-date {
+    display: block;
+    text-align: center;
+    font-size: 10px;
+    color: rgba(255,255,255,.35);
+    margin-top: 4px;
+}
+.photo-modal-by {
+    display: block;
+    text-align: center;
+    font-size: 9.5px;
+    color: rgba(255,255,255,.25);
+    margin-top: 1px;
+}
+.panel-search-wrap {
+    display: none;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+}
+
+.panel-search-box {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 0 12px;
+    gap: 8px;
+    transition: background .2s, border-color .2s;
+}
+
+.panel-search-box:focus-within {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(201,168,76,0.4);
+}
+
+.panel-search-icon {
+    color: rgba(255,255,255,0.3);
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.panel-search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: var(--font);
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.9);
+    padding: 9px 0;
+}
+.panel-search-input::placeholder { color: rgba(255,255,255,0.3); }
+
+.panel-search-clear {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    cursor: pointer;
+    color: rgba(255,255,255,0.5);
+    font-size: 10px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background .15s;
+}
+.panel-search-clear:hover { background: rgba(255,255,255,0.2); } 
+
 
 @media (max-width: 768px) {
     :root { --panel-w: 240px; }
     .map-search-wrap { right: var(--panel-w); }
     .map-search-box, .map-search-results { width: 260px; }
+    .photo-modal-grid { grid-template-columns: repeat(2, 1fr); }
 }

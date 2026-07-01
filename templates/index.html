@@ -57,9 +57,32 @@
             <span id="onlineCount">۰</span> آنلاین
         </div>
     </div>
-
+    <div class="panel-search-wrap" id="panelSearchWrap" style="display:none">
+        <div class="panel-search-box">
+            <i class="fas fa-search panel-search-icon"></i>
+            <input type="text" id="panelSearchInput" class="panel-search-input"
+                   placeholder="جستجو..." autocomplete="off" dir="rtl">
+            <button class="panel-search-clear" id="panelSearchClear" style="display:none">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
     <div class="panel-list" id="visitorList">
         <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
+    </div>
+</div>
+
+<div class="photo-modal" id="photoModal">
+    <div class="photo-modal-backdrop" id="photoModalBackdrop"></div>
+    <div class="photo-modal-content">
+        <div class="photo-modal-header">
+            <div>
+                <div class="photo-modal-name" id="photoModalName"></div>
+                <div class="photo-modal-address" id="photoModalAddress"></div>
+            </div>
+            <button class="photo-modal-close" id="photoModalClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="photo-modal-grid" id="photoModalGrid"></div>
     </div>
 </div>
 

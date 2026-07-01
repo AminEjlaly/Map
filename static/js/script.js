@@ -1,16 +1,18 @@
 'use strict';
 
 const SECTIONS = {
-    visitors:           { title: 'فروشنده‌ها',         icon: 'fa-user-tie',       showBadge: true,  load: loadVisitors },
-    customers:          { title: 'مشتری‌های ثبت‌شده',  icon: 'fa-users',          showBadge: false, load: () => renderComingSoon('مشتری‌های ثبت‌شده') },
-    payments:           { title: 'پرداخت‌ها',           icon: 'fa-money-bill-wave', showBadge: false, load: () => renderComingSoon('پرداخت‌ها') },
-    'user-settings':    { title: 'تنظیمات کاربران',    icon: 'fa-user-cog',       showBadge: false, load: () => renderComingSoon('تنظیمات کاربران') },
-    'general-settings': { title: 'تنظیمات عمومی',      icon: 'fa-cog',            showBadge: false, load: () => renderComingSoon('تنظیمات عمومی') },
+    visitors:           { title: 'فروشنده‌ها',         icon: 'fa-user-tie',       showBadge: true,  showSearch: true,  load: loadVisitors },
+    customers:          { title: 'مشتری‌های ثبت‌شده',  icon: 'fa-users',          showBadge: false, showSearch: true,  load: loadCustomers },
+    payments:           { title: 'پرداخت‌ها',           icon: 'fa-money-bill-wave', showBadge: false, showSearch: false, load: () => renderComingSoon('پرداخت‌ها') },
+    'user-settings':    { title: 'تنظیمات کاربران',    icon: 'fa-user-cog',       showBadge: false, showSearch: false, load: () => renderComingSoon('تنظیمات کاربران') },
+    'general-settings': { title: 'تنظیمات عمومی',      icon: 'fa-cog',            showBadge: false, showSearch: false, load: () => renderComingSoon('تنظیمات عمومی') },
 };
 
 let currentSection   = 'visitors';
 let visitorsInterval = null;
 let mapFrameReady    = false;  // iframe لود شده یا نه
+
+let _renderedCustomers = [];   // آخرین آرایه‌ی رندر شده - برای مچ کردن ایندکس کلیک
 
 /* ── دسترسی به iframe نقشه ────────────────────────────── */
 function getMapFrame() {
@@ -52,6 +54,13 @@ function switchSection(key) {
     document.getElementById('sectionIcon').className       = `fas ${cfg.icon}`;
     document.getElementById('onlineBadge').style.display   = cfg.showBadge ? 'flex' : 'none';
 
+    const searchWrap  = document.getElementById('panelSearchWrap');
+    const searchInput = document.getElementById('panelSearchInput');
+    const searchClear = document.getElementById('panelSearchClear');
+    searchWrap.style.display  = cfg.showSearch ? 'flex' : 'none';
+    searchInput.value          = '';
+    searchClear.style.display  = 'none';
+
     clearInterval(visitorsInterval);
     visitorsInterval = null;
     cfg.load();
@@ -65,28 +74,17 @@ async function loadVisitors() {
         const data = await fetch('/api/visitors-status').then(r => r.json());
 
         if (!data.success || !data.visitors?.length) {
+            window._visitorsData = [];
             listEl.innerHTML = '<p class="empty">فروشنده‌ای یافت نشد</p>';
             document.getElementById('onlineCount').textContent = '۰';
             return;
         }
 
+        window._visitorsData = data.visitors;
         const onlineCount = data.visitors.filter(v => v.isOnline).length;
         document.getElementById('onlineCount').textContent = toFa(onlineCount);
 
-        listEl.innerHTML = data.visitors.map(v => {
-            const cls     = v.isOnline ? 'online' : 'offline';
-            const initial = v.name ? v.name.charAt(0) : '؟';
-            return `
-            <div class="visitor-card ${cls}">
-                <div class="visitor-avatar">${initial}<span class="status-dot ${cls}"></span></div>
-                <div class="visitor-info">
-                    <div class="visitor-name">${v.name}</div>
-                    <div class="visitor-meta ${cls}">
-                        ${v.isOnline ? 'آنلاین' : 'آخرین بازدید: ' + v.lastSeen}
-                    </div>
-                </div>
-            </div>`;
-        }).join('');
+        renderVisitorsList(applyCurrentSearch(data.visitors, 'visitors'));
 
     } catch (e) {
         listEl.innerHTML = '<p class="error">خطا در بارگذاری</p>';
@@ -94,7 +92,156 @@ async function loadVisitors() {
     }
 }
 
-/* ── سرچ مشتری ────────────────────────────────────────── */
+function renderVisitorsList(visitors) {
+    const listEl = document.getElementById('visitorList');
+
+    if (!visitors.length) {
+        listEl.innerHTML = '<p class="empty">نتیجه‌ای یافت نشد</p>';
+        return;
+    }
+
+    listEl.innerHTML = visitors.map(v => {
+        const cls     = v.isOnline ? 'online' : 'offline';
+        const initial = v.name ? v.name.charAt(0) : '؟';
+        return `
+        <div class="visitor-card ${cls}">
+            <div class="visitor-avatar">${initial}<span class="status-dot ${cls}"></span></div>
+            <div class="visitor-info">
+                <div class="visitor-name">${v.name}</div>
+                <div class="visitor-meta ${cls}">
+                    ${v.isOnline ? 'آنلاین' : 'آخرین بازدید: ' + v.lastSeen}
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+/* ── لود مشتری‌های ثبت‌شده ─────────────────────────────── */
+async function loadCustomers() {
+    const listEl = document.getElementById('visitorList');
+    listEl.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
+    try {
+        const data = await fetch('/api/new-customers').then(r => r.json());
+
+        if (!data.success || !data.customers?.length) {
+            window._customersData = [];
+            listEl.innerHTML = '<p class="empty">مشتری‌ای یافت نشد</p>';
+            return;
+        }
+
+        window._customersData = data.customers;
+        renderCustomersList(applyCurrentSearch(data.customers, 'customers'));
+
+    } catch (e) {
+        listEl.innerHTML = '<p class="error">خطا در بارگذاری</p>';
+        console.error(e);
+    }
+}
+
+function renderCustomersList(customers) {
+    const listEl = document.getElementById('visitorList');
+    _renderedCustomers = customers;
+
+    if (!customers.length) {
+        listEl.innerHTML = '<p class="empty">نتیجه‌ای یافت نشد</p>';
+        return;
+    }
+
+    listEl.innerHTML = customers.map((c, i) => {
+        const firstPhoto  = c.photos?.[0]?.url || '';
+        const photoCount  = c.photos?.length || 0;
+        return `
+        <div class="customer-card" data-i="${i}">
+            <img class="customer-photo" src="${firstPhoto}" alt="${c.name}"
+                 onerror="this.classList.add('no-photo')">
+            ${photoCount > 1 ? `<span class="customer-photo-count">${toFa(photoCount)}</span>` : ''}
+            <div class="customer-info">
+                <div class="customer-name">${c.name || 'بدون نام'}</div>
+                <div class="customer-code">کد: ${c.code}</div>
+                <div class="customer-address">${c.address || 'آدرس ثبت نشده'}</div>
+            </div>
+        </div>`;
+    }).join('');
+
+    listEl.querySelectorAll('.customer-card').forEach(el => {
+        el.addEventListener('click', () => openPhotoModal(_renderedCustomers[+el.dataset.i]));
+    });
+}
+
+/* ── مودال گالری عکس مشتری ────────────────────────────── */
+function openPhotoModal(customer) {
+    document.getElementById('photoModalName').textContent    = customer.name || 'بدون نام';
+    document.getElementById('photoModalAddress').textContent = customer.address || 'آدرس ثبت نشده';
+
+    const grid = document.getElementById('photoModalGrid');
+    grid.innerHTML = (customer.photos?.length)
+        ? customer.photos.map(p => `
+            <div class="photo-modal-item">
+                <img src="${p.url}" alt="" onerror="this.parentElement.classList.add('no-photo')">
+                <span class="photo-modal-date">${p.uploadedAt}</span>
+                ${p.uploadedBy ? `<span class="photo-modal-by">ثبت توسط: ${p.uploadedBy}</span>` : ''}
+            </div>`).join('')
+        : '<p class="empty">عکسی یافت نشد</p>';
+
+    document.getElementById('photoModal').classList.add('open');
+}
+
+function closePhotoModal() {
+    document.getElementById('photoModal').classList.remove('open');
+}
+
+/* ── سرچ داخل پنل (فروشنده‌ها / مشتری‌ها) ─────────────── */
+function applyCurrentSearch(data, section) {
+    const input = document.getElementById('panelSearchInput');
+    const q = input ? input.value.trim() : '';
+    if (!q) return data;
+
+    if (section === 'visitors') {
+        return data.filter(v =>
+            (v.name && v.name.includes(q)) ||
+            String(v.code).includes(q)
+        );
+    }
+    if (section === 'customers') {
+        return data.filter(c =>
+            (c.name && c.name.includes(q)) ||
+            (c.address && c.address.includes(q)) ||
+            String(c.code).includes(q)
+        );
+    }
+    return data;
+}
+
+function initPanelSearch() {
+    const input    = document.getElementById('panelSearchInput');
+    const clearBtn = document.getElementById('panelSearchClear');
+    let   timer    = null;
+
+    function runFilter() {
+        const q = input.value.trim();
+        clearBtn.style.display = q ? 'flex' : 'none';
+
+        if (currentSection === 'visitors') {
+            renderVisitorsList(applyCurrentSearch(window._visitorsData || [], 'visitors'));
+        } else if (currentSection === 'customers') {
+            renderCustomersList(applyCurrentSearch(window._customersData || [], 'customers'));
+        }
+    }
+
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(runFilter, 150);
+    });
+
+    clearBtn.addEventListener('click', () => {
+        input.value = '';
+        clearBtn.style.display = 'none';
+        runFilter();
+        input.focus();
+    });
+}
+
+/* ── سرچ مشتری روی نقشه ────────────────────────────────── */
 function initMapSearch() {
     const input    = document.getElementById('mapSearchInput');
     const results  = document.getElementById('mapSearchResults');
@@ -190,4 +337,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     switchSection('visitors');
     initMapSearch();
+    initPanelSearch();
+
+    const photoModalClose    = document.getElementById('photoModalClose');
+    const photoModalBackdrop = document.getElementById('photoModalBackdrop');
+    if (photoModalClose)    photoModalClose.addEventListener('click', closePhotoModal);
+    if (photoModalBackdrop) photoModalBackdrop.addEventListener('click', closePhotoModal);
 });
