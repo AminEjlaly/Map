@@ -315,3 +315,55 @@ def customers_map(buyers: list, visitors_location: list = None, zoom: int = 12,
 
 def base_map(zoom: int = 14) -> str:
     return _wrap_html(_company_marker_js(), zoom=zoom)
+
+def visitor_route_map(locs: list, visitor_name: str = "", zoom: int = 13) -> str:
+    """رسم مسیر حرکت یک ویزیتور روی نقشه (خط مسیر + مارکر شروع/پایان)"""
+    if not locs:
+        empty_js = """
+        var el = document.createElement('div');
+        el.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);' +
+          'background:rgba(15,23,48,.92);color:#fff;padding:14px 24px;border-radius:12px;' +
+          'font-family:Tahoma;font-size:13px;z-index:9999;text-align:center;white-space:nowrap';
+        el.textContent = 'موقعیتی برای این تاریخ ثبت نشده';
+        document.body.appendChild(el);
+        """
+        return _wrap_html(_company_marker_js() + empty_js, zoom=11)
+
+    coords_js = "[" + ",".join(f"[{l['lat']},{l['lng']}]" for l in locs) + "]"
+    start, end = locs[0], locs[-1]
+    safe_name  = str(visitor_name).replace("`", "'").replace("'", "\\'")
+
+    start_popup = f"شروع مسیر<br>{safe_name}<br>ساعت: {start['time']}"
+    end_popup   = f"پایان مسیر<br>{safe_name}<br>ساعت: {end['time']}"
+
+    person_svg = (
+        '<svg viewBox="0 0 24 24" fill="white" width="13" height="13">'
+        '<path d="M12 12c2.7 0 8 1.34 8 4v2H4v-2c0-2.66 5.3-4 8-4z'
+        'm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>'
+    )
+    start_icon = _pin_html("#22c55e", "white", 26, 6, 9, person_svg)
+    end_icon   = _pin_html("#EF4444", "white", 26, 6, 9, person_svg)
+
+    js = f"""
+    var routeCoords = {coords_js};
+
+    var line = L.polyline(routeCoords, {{
+      color: '#6366F1', weight: 4, opacity: 0.85,
+      dashArray: '2 8', lineCap: 'round'
+    }}).addTo(map);
+
+    L.marker(routeCoords[0], {{
+      zIndexOffset: 1800,
+      icon: L.divIcon({{ className:'', html:`{start_icon}`, iconSize:[26,37], iconAnchor:[13,37] }})
+    }}).addTo(map).bindPopup(`{start_popup}`);
+
+    L.marker(routeCoords[routeCoords.length - 1], {{
+      zIndexOffset: 1800,
+      icon: L.divIcon({{ className:'', html:`{end_icon}`, iconSize:[26,37], iconAnchor:[13,37] }})
+    }}).addTo(map).bindPopup(`{end_popup}`);
+
+    setTimeout(function() {{
+      map.fitBounds(line.getBounds(), {{ padding: [60, 60], maxZoom: 16 }});
+    }}, 60);
+    """
+    return _wrap_html(js, zoom=zoom)

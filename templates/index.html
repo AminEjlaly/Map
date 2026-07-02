@@ -13,6 +13,10 @@
 <div id="map">
     <iframe id="mapFrame" src="/map-frame" style="width:100%;height:100%;border:none;"></iframe>
 </div>
+<button class="exit-app-btn" id="exitAppBtn" data-tooltip="خروج از برنامه">
+    <i class="fas fa-power-off"></i>
+    <span>خروج</span>
+</button>
 
 <!-- سرچ‌بار + انتخاب شهر روی نقشه -->
 <div class="map-search-wrap">
@@ -22,6 +26,16 @@
             <i class="fas fa-city city-select-icon"></i>
             <span class="city-select-label" id="citySelectLabel">همه شهرها</span>
             <i class="fas fa-chevron-down city-select-arrow"></i>
+
+            <!-- دراپ‌داون لیست شهرها -->
+            <div class="city-select-dropdown" id="citySelectDropdown">
+                <div class="city-select-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="citySelectSearchInput"
+                           placeholder="جستجوی شهر..." autocomplete="off" dir="rtl">
+                </div>
+                <div class="city-select-list" id="citySelectList"></div>
+            </div>
         </div>
 
         <!-- سرچ مشتری -->
@@ -33,16 +47,6 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
-    </div>
-
-    <!-- دراپ‌داون لیست شهرها -->
-    <div class="city-select-dropdown" id="citySelectDropdown">
-        <div class="city-select-search">
-            <i class="fas fa-search"></i>
-            <input type="text" id="citySelectSearchInput"
-                   placeholder="جستجوی شهر..." autocomplete="off" dir="rtl">
-        </div>
-        <div class="city-select-list" id="citySelectList"></div>
     </div>
 
     <!-- نتایج سرچ مشتری -->
@@ -74,9 +78,14 @@
             <i class="fas fa-user-tie" id="sectionIcon"></i>
             <span id="sectionTitle">فروشنده‌ها</span>
         </div>
-        <div class="online-badge" id="onlineBadge">
-            <span class="pulse-dot"></span>
-            <span id="onlineCount">۰</span> آنلاین
+        <div class="panel-header-actions">
+            <button class="report-route-btn" id="reportRouteBtn" title="گزارش حرکت">
+                <i class="fas fa-route"></i>
+            </button>
+            <div class="online-badge" id="onlineBadge">
+                <span class="pulse-dot"></span>
+                <span id="onlineCount">۰</span> آنلاین
+            </div>
         </div>
     </div>
     <div class="panel-search-wrap" id="panelSearchWrap" style="display:none">
@@ -107,7 +116,39 @@
         <div class="photo-modal-grid" id="photoModalGrid"></div>
     </div>
 </div>
+<div class="route-modal" id="routeModal">
+    <div class="route-modal-backdrop" id="routeModalBackdrop"></div>
+    <div class="route-modal-content">
+        <div class="route-modal-header">
+            <div class="route-modal-title"><i class="fas fa-route"></i> گزارش حرکت فروشنده</div>
+            <button class="route-modal-close" id="routeModalClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="route-modal-body">
+            <label class="route-field-label">فروشنده</label>
+            <select class="route-select" id="routeVisitorSelect">
+                <option value="">در حال بارگذاری...</option>
+            </select>
 
+            <label class="route-field-label">تاریخ</label>
+            <div class="route-date-row">
+                <input type="text" class="route-date-input" id="routeDateInput"
+                       placeholder="مثال: 1403/04/10" dir="ltr">
+                <button class="route-today-btn" id="routeTodayBtn">امروز</button>
+            </div>
+            <div class="route-hint">برای کل مسیرهای ثبت‌شده، تاریخ رو خالی بذار</div>
+
+            <button class="route-submit-btn" id="routeSubmitBtn">
+                <i class="fas fa-search-location"></i> نمایش گزارش
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="route-active-bar" id="routeActiveBar" style="display:none">
+    <i class="fas fa-route"></i>
+    <span id="routeActiveText"></span>
+    <button id="routeActiveClose" title="بازگشت به نقشه اصلی"><i class="fas fa-times"></i></button>
+</div>
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

@@ -149,6 +149,47 @@ def get_online_visitors_last_location() -> list:
         print(f"❌ get_online_visitors_last_location: {e}")
         return []
 
+def get_visitor_route(visitor_code: int, date_str: str = None) -> list:
+    """مسیر حرکت یک ویزیتور در یک روز (یا کل تاریخچه اگه date_str خالی باشه)"""
+    q = """
+        SELECT Lat, Lng, Time, date
+        FROM TblVisitorLocation
+        WHERE VisitorCode = ?
+          AND Lat IS NOT NULL AND Lng IS NOT NULL
+          AND ISNUMERIC(Lat) = 1 AND ISNUMERIC(Lng) = 1
+          {date_condition}
+        ORDER BY date ASC, Time ASC
+    """
+    date_condition = ""
+    params = [visitor_code]
+    if date_str:
+        date_condition = "AND date = ?"
+        params.append(date_str)
+
+    q = q.format(date_condition=date_condition)
+
+    try:
+        with _db.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(q, tuple(params))
+            result = []
+            for r in cur.fetchall():
+                try:
+                    lat, lng = float(r[0]), float(r[1])
+                except (TypeError, ValueError):
+                    continue
+                if lat == 0 or lng == 0:
+                    continue
+                result.append({
+                    "lat":  lat,
+                    "lng":  lng,
+                    "time": str(r[2]) if r[2] else "",
+                    "date": str(r[3]) if r[3] else "",
+                })
+            return result
+    except Exception as e:
+        print(f"❌ get_visitor_route: {e}")
+        return []
 
 def get_new_customers(limit: int = 50) -> list:
     """آخرین مشتری‌های ثبت‌شده - هر مشتری با همه‌ی عکس‌هاش و اسم ثبت‌کننده"""
@@ -405,12 +446,12 @@ def get_users_settings() -> dict:
                     'manfi': bool(r[9]) if r[9] is not None else False,
                     'proximity_check_enabled': bool(r[10]) if r[10] is not None else False,
                     'maxDistance': int(r[11]) if r[11] is not None else 0,
-                    'createdAt': str(r[12]) if r[12] else '',
+                   'createdAt': str(r[12]) if r[12] else '',
                     'updatedAt': str(r[13]) if r[13] else '',
-                    'lastLogin': str(r[14]) if r[14] else '',
+                    'lastLogin': r[14].strftime("%H:%M - %Y/%m/%d") if hasattr(r[14], "strftime") else (str(r[14]) if r[14] else ''),
                     'location_tracking_enabled': bool(r[15]) if r[15] is not None else False,
                     'isOnline': bool(r[16]) if r[16] is not None else False,
-                    'lastSeen': str(r[17]) if r[17] else ''
+                    'lastSeen': r[17].strftime("%H:%M - %Y/%m/%d") if hasattr(r[17], "strftime") else (str(r[17]) if r[17] else '')
                 }
                 users.append(user)
             

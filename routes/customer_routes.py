@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, Response, request
 import database.queries as db
-from services.map_service import customers_map
+from services.map_service import customers_map, visitor_route_map
 
 customer_bp = Blueprint("customer", __name__)
 
@@ -21,4 +21,19 @@ def map_frame():
         zoom=12,
         fit_bounds=bool(city_code),
     )
+    return Response(html, mimetype="text/html")
+
+@customer_bp.route("/visitor-route-frame")
+def visitor_route_frame():
+    visitor_code = request.args.get("visitor")
+    date_str     = request.args.get("date") or None
+    visitor_name = request.args.get("name", "")
+
+    try:
+        code = int(visitor_code)
+    except (TypeError, ValueError):
+        return Response("کد ویزیتور نامعتبر است", status=400)
+
+    locs = db.get_visitor_route(code, date_str)
+    html = visitor_route_map(locs, visitor_name=visitor_name)
     return Response(html, mimetype="text/html")

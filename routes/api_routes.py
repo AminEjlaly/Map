@@ -1,5 +1,9 @@
 # routes/api_routes.py
 import os
+import os
+import sys
+import threading
+from khayyam import JalaliDate
 from flask import Blueprint, jsonify, send_from_directory, abort, request
 import database.queries as db
 from utils.photo_config import (
@@ -11,6 +15,16 @@ from utils.photo_config import (
 
 api_bp = Blueprint("api", __name__)
 
+@api_bp.route("/api/shutdown", methods=['POST'])
+def api_shutdown():
+    """خاموش کردن کامل برنامه"""
+    def _do_shutdown():
+        import time
+        time.sleep(0.6)  # فرصت برای ارسال جواب به کلاینت
+        os._exit(0)
+
+    threading.Thread(target=_do_shutdown, daemon=True).start()
+    return jsonify({"success": True, "message": "در حال بستن برنامه..."})
 
 @api_bp.route("/api/visitors-status")
 def visitors_status():
@@ -123,3 +137,8 @@ def api_user_types():
             {'value': 'buyer', 'label': 'مشتری', 'icon': 'fa-user'}
         ]
     })
+    
+@api_bp.route("/api/today-date")
+def api_today_date():
+    j = JalaliDate.today()
+    return jsonify({"success": True, "date": f"{j.year}/{j.month:02d}/{j.day:02d}"})

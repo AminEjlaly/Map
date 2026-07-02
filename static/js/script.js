@@ -68,6 +68,7 @@ function switchSection(key) {
     document.getElementById('sectionTitle').textContent    = cfg.title;
     document.getElementById('sectionIcon').className       = `fas ${cfg.icon}`;
     document.getElementById('onlineBadge').style.display   = cfg.showBadge ? 'flex' : 'none';
+    document.getElementById('reportRouteBtn').style.display = (key === 'visitors') ? 'flex' : 'none';
 
     const searchWrap  = document.getElementById('panelSearchWrap');
     const searchInput = document.getElementById('panelSearchInput');
@@ -580,7 +581,7 @@ function renderPaymentCard(payment, status, index) {
     let referenceLabel = '';
     
     if (paymentTypeLower === 'check') {
-        referenceLabel = 'شماره سیادی';
+        referenceLabel = 'شماره صیادی';
         referenceNumber = payment.SayyadiNumber || 'ثبت نشده';
     } else if (paymentTypeLower === 'transfer') {
         referenceLabel = 'شماره حواله';
@@ -899,40 +900,32 @@ async function loadUserSettings() {
 
 function renderUserSettings(users) {
     const listEl = document.getElementById('visitorList');
-    
+
     if (!users?.length) {
         listEl.innerHTML = '<p class="empty">هیچ کاربری یافت نشد</p>';
         return;
     }
-    
-    // فیلتر بر اساس نوع کاربر
+
     let filteredUsers = users;
     if (currentUserFilter !== 'all') {
         filteredUsers = users.filter(u => u.user_type === currentUserFilter);
     }
-    
-    // جستجو
+
     const searchQuery = document.getElementById('panelSearchInput')?.value?.trim() || '';
     if (searchQuery) {
-        filteredUsers = filteredUsers.filter(u => 
-            u.name.includes(searchQuery) || 
+        filteredUsers = filteredUsers.filter(u =>
+            u.name.includes(searchQuery) ||
             u.user_code.includes(searchQuery)
         );
     }
-    
-    if (!filteredUsers.length) {
-        listEl.innerHTML = '<p class="empty">نتیجه‌ای یافت نشد</p>';
-        return;
-    }
-    
-    // هدر فیلترها
+
     let html = `
         <div class="user-filter-bar">
             <button class="user-filter-btn ${currentUserFilter === 'all' ? 'active' : ''}" data-filter="all">
                 همه <span class="filter-count">${toFa(users.length)}</span>
             </button>
     `;
-    
+
     _userTypes.forEach(type => {
         const count = users.filter(u => u.user_type === type.value).length;
         html += `
@@ -942,52 +935,59 @@ function renderUserSettings(users) {
             </button>
         `;
     });
-    
+
     html += `</div>`;
-    
-    // لیست کاربران
+
+    if (!filteredUsers.length) {
+        html += '<p class="empty">نتیجه‌ای یافت نشد</p>';
+        listEl.innerHTML = html;
+        document.querySelectorAll('.user-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentUserFilter = btn.dataset.filter;
+                renderUserSettings(_usersData);
+            });
+        });
+        return;
+    }
+
     html += `<div class="user-list">`;
-    
     filteredUsers.forEach((user, index) => {
         html += renderUserCard(user, index);
     });
-    
     html += `</div>`;
-    
+
     listEl.innerHTML = html;
-    
-    // رویدادهای فیلتر
-   document.querySelectorAll('.user-setting-toggle').forEach(toggle => {
-    toggle.addEventListener('change', function() {
-        const userCode    = this.dataset.userCode;
-        const settingKey  = this.dataset.setting;
-        const value       = this.checked;
 
-        // نمایش/مخفی کردن آنی باکس «حداکثر فاصله» بدون نیاز به رفرش یا صبر برای سرور
-        if (settingKey === 'proximity_check_enabled') {
-            const card = this.closest('.user-card');
-            const proximityBox = card ? card.querySelector('.user-proximity-control') : null;
-            if (proximityBox) {
-                proximityBox.classList.toggle('hidden', !value);
-            }
-        }
-
-        updateUserSetting(userCode, settingKey, value);
+    // ── فیلتر بالای لیست ──────────────────────────────
+    document.querySelectorAll('.user-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentUserFilter = btn.dataset.filter;
+            renderUserSettings(_usersData);
+        });
     });
-});
-    
-    // رویدادهای تغییر تنظیمات
+
+    // ── تغییر سوییچ‌ها (فقط یک‌بار ثبت می‌شه) ──────────
     document.querySelectorAll('.user-setting-toggle').forEach(toggle => {
-        toggle.addEventListener('change', function() {
-            const userCode = this.dataset.userCode;
+        toggle.addEventListener('change', function () {
+            const userCode   = this.dataset.userCode;
             const settingKey = this.dataset.setting;
-            const value = this.checked;
+            const value      = this.checked;
+
+            if (settingKey === 'proximity_check_enabled') {
+                const card = this.closest('.user-card');
+                const proximityBox = card ? card.querySelector('.user-proximity-control') : null;
+                if (proximityBox) {
+                    proximityBox.classList.toggle('hidden', !value);
+                }
+            }
+
             updateUserSetting(userCode, settingKey, value);
         });
     });
-    
+
+    // ── تغییر ورودی حداکثر فاصله ──────────────────────
     document.querySelectorAll('.user-distance-input').forEach(input => {
-        input.addEventListener('change', function() {
+        input.addEventListener('change', function () {
             const userCode = this.dataset.userCode;
             const value = parseInt(this.value) || 0;
             updateUserSetting(userCode, 'maxDistance', value);
@@ -996,109 +996,69 @@ function renderUserSettings(users) {
 }
 
 function renderUserCard(user, index) {
-    // تعیین نوع کاربر
     const typeMap = {
         'visitor': { label: 'ویزیتور', icon: 'fa-user-tie', color: '#c9a84c' },
-        'staff': { label: 'پرسنل', icon: 'fa-user-cog', color: '#3b82f6' },
-        'buyer': { label: 'مشتری', icon: 'fa-user', color: '#22c55e' }
+        'staff':   { label: 'پرسنل',   icon: 'fa-user-cog', color: '#3b82f6' },
+        'buyer':   { label: 'مشتری',   icon: 'fa-user',     color: '#22c55e' }
     };
-    
     const typeInfo = typeMap[user.user_type] || typeMap['visitor'];
-    
-    // وضعیت آنلاین
-    const onlineStatus = user.isOnline 
-        ? '<span class="user-online-badge"><span class="pulse-dot"></span> آنلاین</span>'
-        : '<span class="user-offline-badge">آفلاین</span>';
-    
-    // باکس محدوده - همیشه توی DOM هست، فقط با کلاس hidden مخفی/نمایان می‌شه
+
+    const statusHtml = user.isOnline
+        ? '<span class="user-status online"><span class="pulse-dot"></span>آنلاین</span>'
+        : `<span class="user-status offline">${user.lastSeen ? 'بازدید: ' + user.lastSeen : 'آفلاین'}</span>`;
+
     const proximityHtml = `
         <div class="user-proximity-control ${user.proximity_check_enabled ? '' : 'hidden'}">
-            <label class="user-setting-label">
-                <span>حداکثر فاصله (متر)</span>
-                <input type="number" class="user-distance-input" 
-                       data-user-code="${user.user_code}" 
-                       value="${user.maxDistance || 0}"
-                       min="0" max="99999">
-            </label>
+            <span><i class="fas fa-ruler"></i> حداکثر فاصله (متر)</span>
+            <input type="number" class="user-distance-input"
+                   data-user-code="${user.user_code}"
+                   value="${user.maxDistance || 0}"
+                   min="0" max="99999">
         </div>
     `;
-    
+
+    const toggles = [
+        { key: 'status',                    label: 'ورود',   icon: 'fa-door-open',      checked: user.status },
+        { key: 'statussell',                label: 'فاکتور', icon: 'fa-file-invoice',   checked: user.statussell },
+        { key: 'manfi',                     label: 'منفی',   icon: 'fa-minus-circle',   checked: user.manfi },
+        { key: 'proximity_check_enabled',   label: 'محدوده', icon: 'fa-map-marker-alt', checked: user.proximity_check_enabled },
+        { key: 'location_tracking_enabled', label: 'ردیابی', icon: 'fa-satellite-dish', checked: user.location_tracking_enabled },
+    ];
+
+    const togglesHtml = toggles.map(t => `
+        <label class="toggle-row">
+            <span class="toggle-icon"><i class="fas ${t.icon}"></i></span>
+            <span class="toggle-label">${t.label}</span>
+            <span class="toggle-switch">
+                <input type="checkbox" class="user-setting-toggle"
+                       data-user-code="${user.user_code}"
+                       data-setting="${t.key}"
+                       ${t.checked ? 'checked' : ''}>
+                <span class="toggle-slider"></span>
+            </span>
+        </label>
+    `).join('');
+
     return `
         <div class="user-card" data-user-code="${user.user_code}">
-            <div class="user-card-header">
-                <div class="user-info">
-                    <div class="user-avatar" style="background: ${typeInfo.color}22; border-color: ${typeInfo.color}44;">
-                        <i class="fas ${typeInfo.icon}" style="color: ${typeInfo.color};"></i>
+            <div class="user-card-top">
+                <div class="user-avatar-sm" style="background:${typeInfo.color}22;border-color:${typeInfo.color}44;">
+                    <i class="fas ${typeInfo.icon}" style="color:${typeInfo.color}"></i>
+                </div>
+                <div class="user-main-info">
+                    <div class="user-name-row">
+                        <span class="user-name" title="${user.name}">${user.name}</span>
+                        <span class="user-type-chip" style="background:${typeInfo.color}1f;color:${typeInfo.color}">${typeInfo.label}</span>
                     </div>
-                    <div class="user-details">
-                        <div class="user-name">${user.name}</div>
-                        <div class="user-code">
-                            <span class="user-type-badge" style="background: ${typeInfo.color}22; color: ${typeInfo.color};">
-                                ${typeInfo.label}
-                            </span>
-                            <span>کد: ${user.user_code}</span>
-                            ${onlineStatus}
-                        </div>
+                    <div class="user-sub-row">
+                        <span>کد: ${user.user_code}</span>
+                        ${statusHtml}
                     </div>
                 </div>
-                <div class="user-last-seen">
-                    ${user.lastSeen ? `آخرین بازدید: ${user.lastSeen}` : ''}
-                </div>
             </div>
-            
-            <div class="user-settings-grid">
-                <div class="user-setting-item">
-                    <label class="user-setting-label">
-                        <span>🚪 اجازه ورود</span>
-                        <input type="checkbox" class="user-setting-toggle" 
-                               data-user-code="${user.user_code}" 
-                               data-setting="status"
-                               ${user.status ? 'checked' : ''}>
-                    </label>
-                </div>
-                
-                <div class="user-setting-item">
-                    <label class="user-setting-label">
-                        <span>📝 اجازه ثبت فاکتور</span>
-                        <input type="checkbox" class="user-setting-toggle" 
-                               data-user-code="${user.user_code}" 
-                               data-setting="statussell"
-                               ${user.statussell ? 'checked' : ''}>
-                    </label>
-                </div>
-                
-                <div class="user-setting-item">
-                    <label class="user-setting-label">
-                        <span>➖ فروش منفی</span>
-                        <input type="checkbox" class="user-setting-toggle" 
-                               data-user-code="${user.user_code}" 
-                               data-setting="manfi"
-                               ${user.manfi ? 'checked' : ''}>
-                    </label>
-                </div>
-                
-                <div class="user-setting-item">
-                    <label class="user-setting-label">
-                        <span>📍 کنترل محدوده</span>
-                        <input type="checkbox" class="user-setting-toggle" 
-                               data-user-code="${user.user_code}" 
-                               data-setting="proximity_check_enabled"
-                               ${user.proximity_check_enabled ? 'checked' : ''}>
-                    </label>
-                </div>
-                
-                ${proximityHtml}
-                
-                <div class="user-setting-item">
-                    <label class="user-setting-label">
-                        <span>📡 ردیابی موقعیت</span>
-                        <input type="checkbox" class="user-setting-toggle" 
-                               data-user-code="${user.user_code}" 
-                               data-setting="location_tracking_enabled"
-                               ${user.location_tracking_enabled ? 'checked' : ''}>
-                    </label>
-                </div>
-            </div>
+
+            <div class="user-toggles">${togglesHtml}</div>
+            ${proximityHtml}
         </div>
     `;
 }
@@ -1109,25 +1069,16 @@ let _updateTimer = null;
 // static/js/script.js - اصلاح تابع updateUserSetting
 
 async function updateUserSetting(userCode, settingKey, value) {
-    // پیدا کردن کاربر
     const user = _usersData.find(u => u.user_code === userCode);
     if (!user) {
         console.error(`❌ کاربر با کد ${userCode} یافت نشد`);
         showToast('❌ کاربر یافت نشد', 'error');
         return;
     }
-    
-    console.log('📝 Updating user setting:', {
-        userCode,
-        settingKey,
-        value,
-        user: user
-    });
-    
-    // ساخت داده برای ارسال
+
     const updateData = {
         user_code: userCode,
-        user_type: user.user_type,  // مطمئن شوید که user_type وجود دارد
+        user_type: user.user_type,
         status: user.status,
         statussell: user.statussell,
         manfi: user.manfi,
@@ -1135,28 +1086,13 @@ async function updateUserSetting(userCode, settingKey, value) {
         maxDistance: user.maxDistance || 0,
         location_tracking_enabled: user.location_tracking_enabled
     };
-    
-    // به‌روزرسانی مقدار مورد نظر
     updateData[settingKey] = value;
-    
-    console.log('📤 Sending to server:', updateData);
-    
-    // اگر maxDistance هست، مقدار رو تنظیم کن
-    if (settingKey === 'maxDistance') {
-        updateData.maxDistance = value;
-    }
-    
-    // نمایش وضعیت در حال ذخیره
-    const toggle = document.querySelector(`.user-setting-toggle[data-user-code="${userCode}"][data-setting="${settingKey}"]`);
-    if (toggle) {
-        toggle.disabled = true;
-        const spinner = document.createElement('span');
-        spinner.style.cssText = 'font-size:11px; color:#c9a84c;';
-        spinner.textContent = ' ⏳';
-        toggle.parentElement.appendChild(spinner);
-    }
-    
-    // Debounce برای جلوگیری از درخواست‌های متعدد
+
+    const toggle = document.querySelector(
+        `.user-setting-toggle[data-user-code="${userCode}"][data-setting="${settingKey}"]`
+    );
+    if (toggle) toggle.disabled = true;
+
     clearTimeout(_updateTimer);
     _updateTimer = setTimeout(async () => {
         try {
@@ -1165,38 +1101,25 @@ async function updateUserSetting(userCode, settingKey, value) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updateData)
             });
-            
+
             const data = await response.json();
-            console.log('📥 Server response:', data);
-            
+
             if (data.success) {
-                // به‌روزرسانی داده محلی
                 const userIndex = _usersData.findIndex(u => u.user_code === userCode);
                 if (userIndex !== -1) {
                     _usersData[userIndex][settingKey] = value;
                 }
-                
                 showToast('✅ تنظیمات با موفقیت ذخیره شد', 'success');
             } else {
                 showToast(`❌ ${data.message}`, 'error');
-                // برگرداندن وضعیت قبلی
-                if (toggle) {
-                    toggle.checked = !value;
-                }
+                if (toggle) toggle.checked = !value;
             }
         } catch (e) {
             console.error('❌ Error:', e);
             showToast('❌ خطا در ارتباط با سرور', 'error');
-            if (toggle) {
-                toggle.checked = !value;
-            }
+            if (toggle) toggle.checked = !value;
         } finally {
-            if (toggle) {
-                toggle.disabled = false;
-                // حذف اسپینر
-                const spinner = toggle.parentElement.querySelector('span:last-child');
-                if (spinner && spinner.textContent.includes('⏳')) spinner.remove();
-            }
+            if (toggle) toggle.disabled = false;
         }
     }, 500);
 }
@@ -1232,6 +1155,91 @@ function toFa(n) {
     return String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
 }
 
+/* ── مودال گزارش حرکت فروشنده ──────────────────────────── */
+let _routeVisitorsLoaded = false;
+
+function openRouteModal() {
+    document.getElementById('routeModal').classList.add('open');
+    if (!_routeVisitorsLoaded) loadRouteVisitorsSelect();
+}
+function closeRouteModal() {
+    document.getElementById('routeModal').classList.remove('open');
+}
+
+async function loadRouteVisitorsSelect() {
+    const select = document.getElementById('routeVisitorSelect');
+    try {
+        const data = await fetch('/api/visitors-status').then(r => r.json());
+        const visitors = (data.success && data.visitors) ? data.visitors : [];
+        if (!visitors.length) {
+            select.innerHTML = '<option value="">فروشنده‌ای یافت نشد</option>';
+            return;
+        }
+        select.innerHTML = visitors
+            .map(v => `<option value="${v.code}" data-name="${v.name}">${v.name}</option>`)
+            .join('');
+        _routeVisitorsLoaded = true;
+    } catch (e) {
+        select.innerHTML = '<option value="">خطا در بارگذاری</option>';
+        console.error(e);
+    }
+}
+
+async function fillTodayDate() {
+    try {
+        const data = await fetch('/api/today-date').then(r => r.json());
+        if (data.success) document.getElementById('routeDateInput').value = data.date;
+    } catch (e) { console.error(e); }
+}
+
+function faToEnLocal(str) {
+    if (!str) return '';
+    return str.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+}
+
+function submitRouteReport() {
+    const select = document.getElementById('routeVisitorSelect');
+    const dateInput = document.getElementById('routeDateInput');
+    const code = select.value;
+    const name = select.selectedOptions[0]?.dataset.name || '';
+    const date = faToEnLocal(dateInput.value.trim());
+
+    if (!code) { showToast('❌ یک فروشنده انتخاب کن', 'error'); return; }
+
+    const frame = getMapFrame();
+    if (!frame) return;
+
+    mapFrameReady = false;
+    const params = new URLSearchParams({ visitor: code, name });
+    if (date) params.set('date', date);
+    frame.src = `/visitor-route-frame?${params.toString()}`;
+
+    document.getElementById('routeActiveText').textContent =
+        `مسیر ${name}${date ? ' — ' + date : ' — کل تاریخچه'}`;
+    document.getElementById('routeActiveBar').style.display = 'flex';
+
+    closeRouteModal();
+}
+
+function closeRouteView() {
+    document.getElementById('routeActiveBar').style.display = 'none';
+    const frame = getMapFrame();
+    if (!frame) return;
+    mapFrameReady = false;
+    frame.src = _selectedCityCode
+        ? `/map-frame?city=${encodeURIComponent(_selectedCityCode)}`
+        : '/map-frame';
+}
+
+function initRouteModal() {
+    document.getElementById('reportRouteBtn')?.addEventListener('click', openRouteModal);
+    document.getElementById('routeModalClose')?.addEventListener('click', closeRouteModal);
+    document.getElementById('routeModalBackdrop')?.addEventListener('click', closeRouteModal);
+    document.getElementById('routeTodayBtn')?.addEventListener('click', fillTodayDate);
+    document.getElementById('routeSubmitBtn')?.addEventListener('click', submitRouteReport);
+    document.getElementById('routeActiveClose')?.addEventListener('click', closeRouteView);
+}
+
 /* ── init ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.section-btn')
@@ -1242,8 +1250,41 @@ document.addEventListener('DOMContentLoaded', () => {
     initPanelSearch();
     initCitySelect();
 
-    const photoModalClose    = document.getElementById('photoModalClose');
+const photoModalClose    = document.getElementById('photoModalClose');
     const photoModalBackdrop = document.getElementById('photoModalBackdrop');
     if (photoModalClose)    photoModalClose.addEventListener('click', closePhotoModal);
     if (photoModalBackdrop) photoModalBackdrop.addEventListener('click', closePhotoModal);
+
+    initExitButton();
+    initRouteModal();
 });
+
+
+/* ── خروج از برنامه ───────────────────────────────────── */
+function initExitButton() {
+    const btn = document.getElementById('exitAppBtn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+        if (!confirm('آیا مطمئنی می‌خوای از برنامه خارج بشی؟ برنامه کامل بسته می‌شه.')) return;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>در حال خروج...</span>';
+
+        try {
+            await fetch('/api/shutdown', { method: 'POST' });
+        } catch (e) {
+            // اتصال قطع می‌شه چون سرور بسته میشه، این خطا طبیعیه
+        }
+
+        setTimeout(() => {
+            document.body.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:center;
+                            height:100vh;background:#0d1526;color:#c9a84c;
+                            font-family:Tahoma,sans-serif;font-size:15px;">
+                    برنامه با موفقیت بسته شد. این پنجره رو می‌تونید ببندید.
+                </div>`;
+            try { window.close(); } catch (e) {}
+        }, 900);
+    });
+}
