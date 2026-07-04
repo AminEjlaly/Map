@@ -58,7 +58,19 @@ def _pin_html(circle_color, border_color, circle_size, tip_w, tip_h, inner_html,
         f'</div>'
     )
 
+_flag_svg = (
+    '<svg viewBox="0 0 24 24" fill="white" width="15" height="15">'
+    '<path d="M5 3v18h2v-7h10l-2-4 2-4H7V3H5z"/></svg>'
+)
 
+_PICK_MARKER_ICON = _pin_html(
+    circle_color="#f59e0b",
+    border_color="white",
+    circle_size=34,
+    tip_w=8,
+    tip_h=12,
+    inner_html=_flag_svg,
+)
 def _wrap_html(body_script: str, zoom: int = 14, center=None) -> str:
     lat, lng = center or _company_coords()
     return f"""<!DOCTYPE html>
@@ -84,6 +96,53 @@ def _wrap_html(body_script: str, zoom: int = 14, center=None) -> str:
     }});
     L.control.zoom({{ position: 'bottomright' }}).addTo(map);
     window.neshanMap = map;
+
+    // ── حالت انتخاب موقعیت (برای تنظیمات عمومی) ──
+    window._pickMarker = null;
+
+    function _sendPickedLocation(lat, lng) {{
+      window.parent.postMessage({{ type: 'locationPicked', lat: lat, lng: lng }}, '*');
+    }}
+
+    function _placePickMarker(latlng) {{
+      var pinHtml = `{_PICK_MARKER_ICON}`;
+      if (window._pickMarker) {{
+        window._pickMarker.setLatLng(latlng);
+      }} else {{
+        window._pickMarker = L.marker(latlng, {{
+          draggable: true,
+          zIndexOffset: 3000,
+          icon: L.divIcon({{
+            className: '',
+            html: pinHtml,
+            iconSize:   [36, 49],
+            iconAnchor: [18, 49]
+          }})
+        }}).addTo(map).bindPopup('موقعیت انتخابی شرکت');
+        window._pickMarker.on('dragend', function(e) {{
+          var ll = e.target.getLatLng();
+          _sendPickedLocation(ll.lat, ll.lng);
+        }});
+      }}
+    }}
+
+    map.on('click', function(e) {{
+      if (!map._pickModeOn) return;
+      _placePickMarker(e.latlng);
+      _sendPickedLocation(e.latlng.lat, e.latlng.lng);
+    }});
+
+    window.addEventListener('message', function(ev) {{
+      if (!ev.data) return;
+      if (ev.data.type === 'enablePickMode') {{
+        map._pickModeOn = true;
+        map.getContainer().style.cursor = 'crosshair';
+      }}
+      if (ev.data.type === 'disablePickMode') {{
+        map._pickModeOn = false;
+        map.getContainer().style.cursor = '';
+      }}
+    }});
 
     {body_script}
   }})();
@@ -183,7 +242,7 @@ def _customer_marker_js(lat, lng, name, code, tel, mandeh):
         f'    <div style="background:{bg_light};border-radius:8px;padding:8px 12px;'
         f'display:flex;justify-content:space-between;align-items:center">'
         f'      <span style="font-size:11px;color:{color_dk};font-weight:700">{status}</span>'
-        f'      <span style="font-size:14px;color:{color_dk};font-weight:800">{mandeh_fmt} ت</span>'
+        f'      <span style="font-size:14px;color:{color_dk};font-weight:800">{mandeh_fmt} </span>'
         f'    </div>'
         f'  </div>'
         f'</div>'
@@ -317,7 +376,7 @@ def base_map(zoom: int = 14) -> str:
     return _wrap_html(_company_marker_js(), zoom=zoom)
 
 def visitor_route_map(locs: list, visitor_name: str = "", zoom: int = 13) -> str:
-    """رسم مسیر حرکت یک ویزیتور روی نقشه (خط مسیر + مارکر شروع/پایان)"""
+    """رسم مسیر حرکت یک ویزیتور روی نقشه (خط مسیر + همه‌ی نقاط + مارکر شروع/پایان)"""
     if not locs:
         empty_js = """
         var el = document.createElement('div');
@@ -344,6 +403,29 @@ def visitor_route_map(locs: list, visitor_name: str = "", zoom: int = 13) -> str
     start_icon = _pin_html("#22c55e", "white", 26, 6, 9, person_svg)
     end_icon   = _pin_html("#EF4444", "white", 26, 6, 9, person_svg)
 
+    # ── نقاط میانی مسیر: مارکر متفاوت (دایره‌ی کوچیک بنفش) ──
+    waypoints_js = ""
+    middle_points = locs[1:-1]
+    if middle_points:
+        parts = []
+        for i, loc in enumerate(middle_points, start=1):
+            wp_popup = (
+                f"نقطه {i} از مسیر<br>{safe_name}"
+                f"<br>تاریخ: {loc.get('date','')}"
+                f"<br>ساعت: {loc.get('time','')}"
+            )
+            parts.append(f"""
+            L.circleMarker([{loc['lat']}, {loc['lng']}], {{
+              radius: 5,
+              weight: 2,
+              color: '#ffffff',
+              fillColor: '#6366F1',
+              fillOpacity: 0.95,
+              opacity: 0.9
+            }}).addTo(map).bindPopup(`{wp_popup}`, {{maxWidth: 190}});
+            """)
+        waypoints_js = "\n".join(parts)
+
     js = f"""
     var routeCoords = {coords_js};
 
@@ -351,6 +433,8 @@ def visitor_route_map(locs: list, visitor_name: str = "", zoom: int = 13) -> str
       color: '#6366F1', weight: 4, opacity: 0.85,
       dashArray: '2 8', lineCap: 'round'
     }}).addTo(map);
+
+    {waypoints_js}
 
     L.marker(routeCoords[0], {{
       zIndexOffset: 1800,

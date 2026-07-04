@@ -5,6 +5,8 @@ import sys
 import threading
 from khayyam import JalaliDate
 from flask import Blueprint, jsonify, send_from_directory, abort, request
+from config.settings_loader import COMPANY_CONFIG, update_company_config
+from config.ui_settings import get_ui_settings, save_ui_settings, reset_ui_settings
 import database.queries as db
 from utils.photo_config import (
     get_photo_base_dir, 
@@ -142,3 +144,43 @@ def api_user_types():
 def api_today_date():
     j = JalaliDate.today()
     return jsonify({"success": True, "date": f"{j.year}/{j.month:02d}/{j.day:02d}"})
+@api_bp.route("/api/company-config")
+def api_company_config():
+    return jsonify({
+        "success": True,
+        "name": COMPANY_CONFIG.get("name", ""),
+        "lat":  COMPANY_CONFIG.get("lat", 0),
+        "lng":  COMPANY_CONFIG.get("lng", 0),
+    })
+
+
+@api_bp.route("/api/update-company-config", methods=['POST'])
+def api_update_company_config():
+    data = request.get_json() or {}
+    name = data.get('name')
+    lat, lng = data.get('lat'), data.get('lng')
+
+    try:
+        lat = float(lat) if lat is not None else None
+        lng = float(lng) if lng is not None else None
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "message": "مختصات نامعتبر است"}), 400
+
+    result = update_company_config(name=name, lat=lat, lng=lng)
+    return jsonify(result)
+
+
+@api_bp.route("/api/ui-settings")
+def api_ui_settings():
+    return jsonify({"success": True, "settings": get_ui_settings()})
+
+
+@api_bp.route("/api/update-ui-settings", methods=['POST'])
+def api_update_ui_settings():
+    data = request.get_json() or {}
+    return jsonify(save_ui_settings(data))
+
+
+@api_bp.route("/api/reset-ui-settings", methods=['POST'])
+def api_reset_ui_settings():
+    return jsonify(reset_ui_settings())

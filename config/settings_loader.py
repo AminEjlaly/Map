@@ -1,3 +1,4 @@
+#config/setting_loader.py
 import os
 import sys
 import json
@@ -26,7 +27,31 @@ def load_encrypted_config(file_path: str, password: str) -> dict:
     key = _derive_key(password, salt)
     decrypted = Fernet(key).decrypt(data[16:])
     return json.loads(decrypted.decode("utf-8"))
+def _save_encrypted_config(config: dict, password: str, path: str):
+    salt = os.urandom(16)
+    key  = _derive_key(password, salt)
+    encrypted = Fernet(key).encrypt(json.dumps(config, ensure_ascii=False).encode())
+    with open(path, "wb") as f:
+        f.write(salt + encrypted)
 
+
+def update_company_config(name: str = None, lat: float = None, lng: float = None) -> dict:
+    """به‌روزرسانی نام/موقعیت شرکت در حافظه و ذخیره در settings.enc.
+    چون COMPANY_CONFIG یک دیکشنری مشترکه بین ماژول‌ها، تغییرش این‌جا
+    بلافاصله روی جاهایی که ایمپورتش کردن (مثل map_service) هم اثر می‌ذاره."""
+    try:
+        if name is not None:
+            COMPANY_CONFIG["name"] = name
+        if lat is not None:
+            COMPANY_CONFIG["lat"] = float(lat)
+        if lng is not None:
+            COMPANY_CONFIG["lng"] = float(lng)
+
+        _SETTINGS["COMPANY_CONFIG"] = COMPANY_CONFIG
+        _save_encrypted_config(_SETTINGS, _PASSWORD, _CONFIG_PATH)
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
 
 # ── بارگذاری ──────────────────────────────────────────────────────────────────
 _PASSWORD    = os.environ.get("CONFIG_PASSWORD", "kara.1464o")

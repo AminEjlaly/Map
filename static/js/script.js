@@ -1,11 +1,11 @@
 'use strict';
 
 const SECTIONS = {
-    visitors:           { title: 'فروشنده‌ها',         icon: 'fa-user-tie',       showBadge: true,  showSearch: true,  load: loadVisitors },
-    customers:          { title: 'مشتری‌های ثبت‌شده',  icon: 'fa-users',          showBadge: false, showSearch: true,  load: loadCustomers },
-    payments:           { title: 'پرداخت‌ها',           icon: 'fa-money-bill-wave', showBadge: false, showSearch: false, load: loadPayments },
-    'user-settings':    { title: 'تنظیمات کاربران',    icon: 'fa-user-cog',       showBadge: false, showSearch: true,  load: loadUserSettings },
-    'general-settings': { title: 'تنظیمات عمومی',      icon: 'fa-cog',            showBadge: false, showSearch: false, load: () => renderComingSoon('تنظیمات عمومی') },
+    visitors: { title: 'فروشنده‌ها', icon: 'fa-user-tie', showBadge: true, showSearch: true, load: loadVisitors },
+    customers: { title: 'مشتری‌های ثبت‌شده', icon: 'fa-users', showBadge: false, showSearch: true, load: loadCustomers },
+    payments: { title: 'پرداخت‌ها', icon: 'fa-money-bill-wave', showBadge: false, showSearch: false, load: loadPayments },
+    'user-settings': { title: 'تنظیمات کاربران', icon: 'fa-user-cog', showBadge: false, showSearch: true, load: loadUserSettings },
+    'general-settings': { title: 'تنظیمات عمومی', icon: 'fa-cog', showBadge: false, showSearch: false, load: loadGeneralSettings },
 };
 
 
@@ -65,28 +65,28 @@ function switchSection(key) {
     document.querySelectorAll('.section-btn')
         .forEach(b => b.classList.toggle('active', b.dataset.section === key));
 
-    document.getElementById('sectionTitle').textContent    = cfg.title;
-    document.getElementById('sectionIcon').className       = `fas ${cfg.icon}`;
-    document.getElementById('onlineBadge').style.display   = cfg.showBadge ? 'flex' : 'none';
+    document.getElementById('sectionTitle').textContent = cfg.title;
+    document.getElementById('sectionIcon').className = `fas ${cfg.icon}`;
+    document.getElementById('onlineBadge').style.display = cfg.showBadge ? 'flex' : 'none';
     document.getElementById('reportRouteBtn').style.display = (key === 'visitors') ? 'flex' : 'none';
 
-    const searchWrap  = document.getElementById('panelSearchWrap');
+    const searchWrap = document.getElementById('panelSearchWrap');
     const searchInput = document.getElementById('panelSearchInput');
     const searchClear = document.getElementById('panelSearchClear');
-    
+
     // برای تنظیمات کاربران هم جستجو فعال باشد
-    searchWrap.style.display  = cfg.showSearch ? 'flex' : 'none';
-    searchInput.value          = '';
-    searchClear.style.display  = 'none';
+    searchWrap.style.display = cfg.showSearch ? 'flex' : 'none';
+    searchInput.value = '';
+    searchClear.style.display = 'none';
 
     clearInterval(visitorsInterval);
     visitorsInterval = null;
-    
+
     // ریست کردن فیلتر کاربران
     if (key === 'user-settings') {
         currentUserFilter = 'all';
     }
-    
+
     cfg.load();
     if (key === 'visitors') visitorsInterval = setInterval(loadVisitors, 15000);
 }
@@ -125,7 +125,7 @@ function renderVisitorsList(visitors) {
     }
 
     listEl.innerHTML = visitors.map(v => {
-        const cls     = v.isOnline ? 'online' : 'offline';
+        const cls = v.isOnline ? 'online' : 'offline';
         const initial = v.name ? v.name.charAt(0) : '؟';
         return `
         <div class="visitor-card ${cls}">
@@ -172,8 +172,8 @@ function renderCustomersList(customers) {
     }
 
     listEl.innerHTML = customers.map((c, i) => {
-        const firstPhoto  = c.photos?.[0]?.url || '';
-        const photoCount  = c.photos?.length || 0;
+        const firstPhoto = c.photos?.[0]?.url || '';
+        const photoCount = c.photos?.length || 0;
         return `
         <div class="customer-card" data-i="${i}">
             <img class="customer-photo" src="${firstPhoto}" alt="${c.name}"
@@ -194,7 +194,7 @@ function renderCustomersList(customers) {
 
 /* ── مودال گالری عکس مشتری ────────────────────────────── */
 function openPhotoModal(customer) {
-    document.getElementById('photoModalName').textContent    = customer.name || 'بدون نام';
+    document.getElementById('photoModalName').textContent = customer.name || 'بدون نام';
     document.getElementById('photoModalAddress').textContent = customer.address || 'آدرس ثبت نشده';
 
     const grid = document.getElementById('photoModalGrid');
@@ -239,9 +239,9 @@ function applyCurrentSearch(data, section) {
 // static/js/script.js - به‌روزرسانی تابع initPanelSearch
 
 function initPanelSearch() {
-    const input    = document.getElementById('panelSearchInput');
+    const input = document.getElementById('panelSearchInput');
     const clearBtn = document.getElementById('panelSearchClear');
-    let   timer    = null;
+    let timer = null;
 
     function runFilter() {
         const q = input.value.trim();
@@ -272,10 +272,10 @@ function initPanelSearch() {
 
 /* ── سرچ مشتری روی نقشه ────────────────────────────────── */
 function initMapSearch() {
-    const input    = document.getElementById('mapSearchInput');
-    const results  = document.getElementById('mapSearchResults');
+    const input = document.getElementById('mapSearchInput');
+    const results = document.getElementById('mapSearchResults');
     const clearBtn = document.getElementById('mapSearchClear');
-    let   timer    = null;
+    let timer = null;
 
     function renderResults(matched) {
         if (!matched.length) {
@@ -296,7 +296,7 @@ function initMapSearch() {
 
         results.querySelectorAll('.search-result-item').forEach(el => {
             el.addEventListener('click', () => {
-                const item      = matched[+el.dataset.i];
+                const item = matched[+el.dataset.i];
                 const neshanMap = getMap();
 
                 if (neshanMap && item.marker) {
@@ -306,9 +306,9 @@ function initMapSearch() {
                     setTimeout(() => item.marker.openPopup(), 450);
                 }
 
-                input.value           = item.name;
+                input.value = item.name;
                 clearBtn.style.display = 'flex';
-                results.style.display  = 'none';
+                results.style.display = 'none';
             });
         });
     }
@@ -317,12 +317,12 @@ function initMapSearch() {
         if (!q) { results.style.display = 'none'; return; }
 
         if (!mapFrameReady) {
-            results.innerHTML     = '<div class="search-no-result">در حال بارگذاری نقشه...</div>';
+            results.innerHTML = '<div class="search-no-result">در حال بارگذاری نقشه...</div>';
             results.style.display = 'block';
             return;
         }
 
-        const all     = getMarkers();
+        const all = getMarkers();
         const matched = all.filter(m => m.name.includes(q) || String(m.code).includes(q));
         renderResults(matched);
     }
@@ -337,7 +337,7 @@ function initMapSearch() {
     clearBtn.addEventListener('click', () => {
         input.value = '';
         clearBtn.style.display = 'none';
-        results.style.display  = 'none';
+        results.style.display = 'none';
         input.focus();
     });
 
@@ -422,9 +422,9 @@ async function loadCities() {
 }
 
 function initCitySelect() {
-    const box       = document.getElementById('citySelectBox');
-    const dropdown  = document.getElementById('citySelectDropdown');
-    const searchIn  = document.getElementById('citySelectSearchInput');
+    const box = document.getElementById('citySelectBox');
+    const dropdown = document.getElementById('citySelectDropdown');
+    const searchIn = document.getElementById('citySelectSearchInput');
 
     if (!box || !dropdown) return;
 
@@ -470,19 +470,19 @@ function initCitySelect() {
 async function loadPayments() {
     const listEl = document.getElementById('visitorList');
     listEl.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
-    
+
     try {
         const response = await fetch('/api/payments');
         const data = await response.json();
-        
+
         if (!data.success) {
             listEl.innerHTML = `<p class="error">❌ ${data.error || 'مشکل در دریافت اطلاعات'}</p>`;
             return;
         }
-        
+
         _paymentsData = data;
         renderPaymentsTabs(data);
-        
+
     } catch (e) {
         listEl.innerHTML = '<p class="error">❌ خطا در بارگذاری پرداخت‌ها</p>';
         console.error(e);
@@ -491,17 +491,17 @@ async function loadPayments() {
 
 function renderPaymentsTabs(data) {
     const listEl = document.getElementById('visitorList');
-    
+
     // اگر هیچ پرداختی وجود نداشت
     if (!data.pending?.length && !data.confirmed?.length) {
         listEl.innerHTML = '<p class="empty">هیچ پرداختی یافت نشد</p>';
         return;
     }
-    
+
     // تعداد هر دسته
     const pendingCount = data.pending?.length || 0;
     const confirmedCount = data.confirmed?.length || 0;
-    
+
     let html = `
         <div class="payment-tabs">
             <button class="payment-tab ${currentPaymentTab === 'pending' ? 'active' : ''}" data-tab="pending">
@@ -515,21 +515,21 @@ function renderPaymentsTabs(data) {
         </div>
         <div class="payment-list-container">
     `;
-    
+
     // نمایش لیست بر اساس تب فعال
     const currentData = currentPaymentTab === 'pending' ? data.pending : data.confirmed;
-    
+
     if (currentData?.length) {
-        html += currentData.map((p, index) => 
+        html += currentData.map((p, index) =>
             renderPaymentCard(p, currentPaymentTab, index)
         ).join('');
     } else {
         html += `<p class="empty">هیچ پرداختی در این دسته وجود ندارد</p>`;
     }
-    
+
     html += `</div>`;
     listEl.innerHTML = html;
-    
+
     // رویدادهای کلیک تب‌ها
     document.querySelectorAll('.payment-tab').forEach(tab => {
         tab.addEventListener('click', () => {
@@ -537,16 +537,16 @@ function renderPaymentsTabs(data) {
             renderPaymentsTabs(_paymentsData);
         });
     });
-    
+
     // رویدادهای کلیک کارت‌ها
     document.querySelectorAll('.payment-card').forEach(el => {
         el.addEventListener('click', () => {
             const paymentId = parseInt(el.dataset.paymentId);
             const status = el.dataset.status;
-            const payment = status === 'pending' 
+            const payment = status === 'pending'
                 ? _paymentsData.pending.find(p => p.PaymentID === paymentId)
                 : _paymentsData.confirmed.find(p => p.PaymentID === paymentId);
-            
+
             if (payment) openPaymentModal(payment);
         });
     });
@@ -556,10 +556,10 @@ function renderPaymentsTabs(data) {
 
 function renderPaymentCard(payment, status, index) {
     const isPending = status === 'pending';
-    const statusBadge = isPending 
+    const statusBadge = isPending
         ? '<span class="payment-status-badge pending">⏳ در انتظار تایید</span>'
         : '<span class="payment-status-badge confirmed">✅ تایید شده</span>';
-    
+
     // تبدیل نوع پرداخت به فارسی با آیکون مناسب
     const paymentTypeMap = {
         'pos': { label: 'پوز', icon: 'fa-credit-card' },
@@ -567,19 +567,19 @@ function renderPaymentCard(payment, status, index) {
         'check': { label: 'چک', icon: 'fa-file-invoice' },
         'cash': { label: 'نقدی', icon: 'fa-money-bill-wave' }
     };
-    
+
     const paymentTypeLower = payment.PaymentType?.toLowerCase() || 'cash';
     const typeInfo = paymentTypeMap[paymentTypeLower] || paymentTypeMap['cash'];
     const paymentTypeLabel = typeInfo.label;
     const paymentTypeIcon = typeInfo.icon;
-    
+
     // فرمت مبلغ با کاما
     const amountFormatted = payment.Amount.toLocaleString('fa-IR');
-    
+
     // نمایش شماره مربوطه بر اساس نوع پرداخت
     let referenceNumber = '';
     let referenceLabel = '';
-    
+
     if (paymentTypeLower === 'check') {
         referenceLabel = 'شماره صیادی';
         referenceNumber = payment.SayyadiNumber || 'ثبت نشده';
@@ -590,10 +590,10 @@ function renderPaymentCard(payment, status, index) {
         referenceLabel = 'شماره پیگیری';
         referenceNumber = payment.SerialNumber || 'ثبت نشده';
     }
-    
+
     // توضیحات - از ستون Description
     const description = payment.Description || 'توضیحی ثبت نشده';
-    
+
     // تاریخ سررسید چک
     let checkDueDateHtml = '';
     if (paymentTypeLower === 'check' && payment.CheckDueDate) {
@@ -604,7 +604,7 @@ function renderPaymentCard(payment, status, index) {
             </div>
         `;
     }
-    
+
     return `
         <div class="payment-card ${status}" data-payment-id="${payment.PaymentID}" data-status="${status}">
             <div class="payment-card-header">
@@ -715,10 +715,10 @@ function openPaymentModal(payment) {
     }
 
     const paymentTypeMap = {
-        'pos':      { label: 'پوز',   icon: 'fa-credit-card' },
+        'pos': { label: 'پوز', icon: 'fa-credit-card' },
         'transfer': { label: 'حواله', icon: 'fa-exchange-alt' },
-        'check':    { label: 'چک',    icon: 'fa-file-invoice' },
-        'cash':     { label: 'نقدی',  icon: 'fa-money-bill-wave' }
+        'check': { label: 'چک', icon: 'fa-file-invoice' },
+        'cash': { label: 'نقدی', icon: 'fa-money-bill-wave' }
     };
     const paymentTypeLower = payment.PaymentType?.toLowerCase() || 'cash';
     const typeInfo = paymentTypeMap[paymentTypeLower] || paymentTypeMap['cash'];
@@ -736,12 +736,12 @@ function openPaymentModal(payment) {
     }
 
     document.getElementById('paymentModalCustomer').textContent = payment.CustomerName;
-    document.getElementById('paymentModalCode').textContent     = `کد مشتری: ${payment.CustomerCode}`;
-    document.getElementById('paymentModalAmount').textContent   = payment.Amount.toLocaleString('fa-IR');
-    document.getElementById('paymentModalType').innerHTML       = `<i class="fas ${typeInfo.icon}"></i> ${typeInfo.label}`;
+    document.getElementById('paymentModalCode').textContent = `کد مشتری: ${payment.CustomerCode}`;
+    document.getElementById('paymentModalAmount').textContent = payment.Amount.toLocaleString('fa-IR');
+    document.getElementById('paymentModalType').innerHTML = `<i class="fas ${typeInfo.icon}"></i> ${typeInfo.label}`;
     document.getElementById('paymentModalDelivery').textContent = payment.DeliveryName || 'نامشخص';
-    document.getElementById('paymentModalDate').textContent     = payment.RegisterDateSh || 'تاریخ نامشخص';
-    document.getElementById('paymentModalDesc').textContent     = payment.Description || 'توضیحاتی ثبت نشده';
+    document.getElementById('paymentModalDate').textContent = payment.RegisterDateSh || 'تاریخ نامشخص';
+    document.getElementById('paymentModalDesc').textContent = payment.Description || 'توضیحاتی ثبت نشده';
 
     // شماره مرجع
     let referenceHtml = '';
@@ -811,7 +811,7 @@ async function confirmPaymentFromModal(paymentId) {
     const confirmBtn = document.getElementById('paymentModalConfirmBtn');
     confirmBtn.disabled = true;
     confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال تایید...';
-    
+
     try {
         const response = await fetch('/api/confirm-payment', {
             method: 'POST',
@@ -821,9 +821,9 @@ async function confirmPaymentFromModal(paymentId) {
                 confirmed_by: 'مدیر سیستم'
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             alert('✅ پرداخت با موفقیت تایید شد');
             closePaymentModal();
@@ -843,7 +843,7 @@ async function confirmPaymentFromModal(paymentId) {
 
 async function quickConfirmPayment(paymentId) {
     if (!confirm('آیا از تایید این پرداخت اطمینان دارید؟')) return;
-    
+
     try {
         const response = await fetch('/api/confirm-payment', {
             method: 'POST',
@@ -853,9 +853,9 @@ async function quickConfirmPayment(paymentId) {
                 confirmed_by: 'مدیر سیستم'
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             alert('✅ پرداخت تایید شد');
             loadPayments();
@@ -871,7 +871,7 @@ async function quickConfirmPayment(paymentId) {
 async function loadUserSettings() {
     const listEl = document.getElementById('visitorList');
     listEl.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
-    
+
     try {
         // دریافت انواع کاربران
         const typesResponse = await fetch('/api/user-types');
@@ -879,19 +879,19 @@ async function loadUserSettings() {
         if (typesData.success) {
             _userTypes = typesData.types;
         }
-        
+
         // دریافت لیست کاربران
         const response = await fetch('/api/users-settings');
         const data = await response.json();
-        
+
         if (!data.success) {
             listEl.innerHTML = `<p class="error">❌ ${data.error || 'مشکل در دریافت اطلاعات'}</p>`;
             return;
         }
-        
+
         _usersData = data.users;
         renderUserSettings(data.users);
-        
+
     } catch (e) {
         listEl.innerHTML = '<p class="error">❌ خطا در بارگذاری کاربران</p>';
         console.error(e);
@@ -969,9 +969,9 @@ function renderUserSettings(users) {
     // ── تغییر سوییچ‌ها (فقط یک‌بار ثبت می‌شه) ──────────
     document.querySelectorAll('.user-setting-toggle').forEach(toggle => {
         toggle.addEventListener('change', function () {
-            const userCode   = this.dataset.userCode;
+            const userCode = this.dataset.userCode;
             const settingKey = this.dataset.setting;
-            const value      = this.checked;
+            const value = this.checked;
 
             if (settingKey === 'proximity_check_enabled') {
                 const card = this.closest('.user-card');
@@ -998,8 +998,8 @@ function renderUserSettings(users) {
 function renderUserCard(user, index) {
     const typeMap = {
         'visitor': { label: 'ویزیتور', icon: 'fa-user-tie', color: '#c9a84c' },
-        'staff':   { label: 'پرسنل',   icon: 'fa-user-cog', color: '#3b82f6' },
-        'buyer':   { label: 'مشتری',   icon: 'fa-user',     color: '#22c55e' }
+        'staff': { label: 'پرسنل', icon: 'fa-user-cog', color: '#3b82f6' },
+        'buyer': { label: 'مشتری', icon: 'fa-user', color: '#22c55e' }
     };
     const typeInfo = typeMap[user.user_type] || typeMap['visitor'];
 
@@ -1018,10 +1018,10 @@ function renderUserCard(user, index) {
     `;
 
     const toggles = [
-        { key: 'status',                    label: 'ورود',   icon: 'fa-door-open',      checked: user.status },
-        { key: 'statussell',                label: 'فاکتور', icon: 'fa-file-invoice',   checked: user.statussell },
-        { key: 'manfi',                     label: 'منفی',   icon: 'fa-minus-circle',   checked: user.manfi },
-        { key: 'proximity_check_enabled',   label: 'محدوده', icon: 'fa-map-marker-alt', checked: user.proximity_check_enabled },
+        { key: 'status', label: 'ورود', icon: 'fa-door-open', checked: user.status },
+        { key: 'statussell', label: 'فاکتور', icon: 'fa-file-invoice', checked: user.statussell },
+        { key: 'manfi', label: 'منفی', icon: 'fa-minus-circle', checked: user.manfi },
+        { key: 'proximity_check_enabled', label: 'محدوده', icon: 'fa-map-marker-alt', checked: user.proximity_check_enabled },
         { key: 'location_tracking_enabled', label: 'ردیابی', icon: 'fa-satellite-dish', checked: user.location_tracking_enabled },
     ];
 
@@ -1128,7 +1128,7 @@ async function updateUserSetting(userCode, settingKey, value) {
 function showToast(message, type = 'info') {
     const existingToast = document.querySelector('.custom-toast');
     if (existingToast) existingToast.remove();
-    
+
     const toast = document.createElement('div');
     toast.className = `custom-toast ${type}`;
     toast.innerHTML = `
@@ -1137,12 +1137,12 @@ function showToast(message, type = 'info') {
             <button class="toast-close" onclick="this.parentElement.parentElement.remove()">×</button>
         </div>
     `;
-    
+
     document.body.appendChild(toast);
-    
+
     // نمایش با انیمیشن
     setTimeout(() => toast.classList.add('show'), 10);
-    
+
     // حذف خودکار بعد از 3 ثانیه
     setTimeout(() => {
         toast.classList.remove('show');
@@ -1249,14 +1249,29 @@ document.addEventListener('DOMContentLoaded', () => {
     initMapSearch();
     initPanelSearch();
     initCitySelect();
+    loadAndApplyUiColors();
 
-const photoModalClose    = document.getElementById('photoModalClose');
+    const photoModalClose = document.getElementById('photoModalClose');
     const photoModalBackdrop = document.getElementById('photoModalBackdrop');
-    if (photoModalClose)    photoModalClose.addEventListener('click', closePhotoModal);
+    if (photoModalClose) photoModalClose.addEventListener('click', closePhotoModal);
     if (photoModalBackdrop) photoModalBackdrop.addEventListener('click', closePhotoModal);
 
     initExitButton();
     initRouteModal();
+
+    window.addEventListener('message', (ev) => {
+        if (ev.data && ev.data.type === 'locationPicked') {
+            const latInput = document.getElementById('companyLatInput');
+            const lngInput = document.getElementById('companyLngInput');
+            if (latInput && lngInput) {
+                latInput.value = ev.data.lat.toFixed(6);
+                lngInput.value = ev.data.lng.toFixed(6);
+            }
+            const hint = document.getElementById('pickLocationHint');
+            if (hint) hint.style.display = 'none';
+            showToast('✅ موقعیت انتخاب شد', 'success');
+        }
+    });
 });
 
 
@@ -1284,7 +1299,190 @@ function initExitButton() {
                             font-family:Tahoma,sans-serif;font-size:15px;">
                     برنامه با موفقیت بسته شد. این پنجره رو می‌تونید ببندید.
                 </div>`;
-            try { window.close(); } catch (e) {}
+            try { window.close(); } catch (e) { }
         }, 900);
     });
+}
+
+/* ── تنظیمات عمومی ──────────────────────────────────────── */
+async function loadGeneralSettings() {
+    const listEl = document.getElementById('visitorList');
+    listEl.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
+
+    try {
+        const [companyRes, uiRes] = await Promise.all([
+            fetch('/api/company-config').then(r => r.json()),
+            fetch('/api/ui-settings').then(r => r.json())
+        ]);
+        renderGeneralSettings(
+            companyRes.success ? companyRes : { name: '', lat: '', lng: '' },
+            uiRes.success ? uiRes.settings : {}
+        );
+    } catch (e) {
+        listEl.innerHTML = '<p class="error">❌ خطا در بارگذاری تنظیمات</p>';
+        console.error(e);
+    }
+}
+
+function renderGeneralSettings(company, ui) {
+    const listEl = document.getElementById('visitorList');
+
+    listEl.innerHTML = `
+        <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-building"></i> اطلاعات شرکت</div>
+
+            <label class="settings-label">نام شرکت</label>
+            <input type="text" class="settings-input" id="companyNameInput" value="${company.name || ''}" dir="rtl">
+
+            <label class="settings-label">موقعیت مکانی شرکت</label>
+            <div class="settings-coords-row">
+                <input type="number" step="any" class="settings-input" id="companyLatInput" placeholder="Latitude" value="${company.lat ?? ''}">
+                <input type="number" step="any" class="settings-input" id="companyLngInput" placeholder="Longitude" value="${company.lng ?? ''}">
+            </div>
+            <button class="settings-picker-btn" id="pickLocationBtn">
+                <i class="fas fa-map-marker-alt"></i> انتخاب موقعیت روی نقشه
+            </button>
+            <div class="settings-hint" id="pickLocationHint" style="display:none">
+                روی نقطه‌ی مورد نظر روی نقشه کلیک کن...
+            </div>
+
+            <button class="settings-save-btn" id="saveCompanyBtn">
+                <i class="fas fa-save"></i> ذخیره اطلاعات شرکت
+            </button>
+        </div>
+
+        <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-palette"></i> رنگ‌بندی پنل</div>
+
+            <div class="settings-color-row">
+                <span>رنگ اصلی (طلایی)</span>
+                <input type="color" class="settings-color-input" id="colorAccent" value="${ui.accentColor || '#c9a84c'}">
+            </div>
+            <div class="settings-color-row">
+                <span>رنگ پس‌زمینه پنل</span>
+                <input type="color" class="settings-color-input" id="colorPanelBg" value="${ui.panelBgColor || '#080e20'}">
+            </div>
+            <div class="settings-color-row">
+                <span>رنگ وضعیت آنلاین/موفق</span>
+                <input type="color" class="settings-color-input" id="colorSuccess" value="${ui.successColor || '#22c55e'}">
+            </div>
+
+            <div class="settings-btn-row">
+                <button class="settings-save-btn" id="saveColorsBtn">
+                    <i class="fas fa-save"></i> ذخیره رنگ‌ها
+                </button>
+                <button class="settings-reset-btn" id="resetColorsBtn">
+                    <i class="fas fa-undo"></i> پیش‌فرض
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('saveCompanyBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('saveCompanyBtn');
+        const name = document.getElementById('companyNameInput').value.trim();
+        const lat = document.getElementById('companyLatInput').value;
+        const lng = document.getElementById('companyLngInput').value;
+
+        if (!name) { showToast('❌ نام شرکت را وارد کن', 'error'); return; }
+        if (lat === '' || lng === '') { showToast('❌ موقعیت مکانی را مشخص کن', 'error'); return; }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال ذخیره...';
+
+        try {
+            const res = await fetch('/api/update-company-config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, lat, lng })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                showToast('✅ اطلاعات شرکت ذخیره شد', 'success');
+                const frame = getMapFrame();
+                const win = getMapWin();
+                if (win) win.postMessage({ type: 'disablePickMode' }, '*');
+                if (frame) { mapFrameReady = false; frame.src = frame.src; }
+            } else {
+                showToast(`❌ ${data.message || 'خطا در ذخیره'}`, 'error');
+            }
+        } catch (e) {
+            showToast('❌ خطا در ارتباط با سرور', 'error');
+            console.error(e);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> ذخیره اطلاعات شرکت';
+        }
+    });
+
+    document.getElementById('pickLocationBtn').addEventListener('click', () => {
+        const win = getMapWin();
+        if (!win) { showToast('❌ نقشه هنوز آماده نیست', 'error'); return; }
+        win.postMessage({ type: 'enablePickMode' }, '*');
+        document.getElementById('pickLocationHint').innerHTML =
+            '📍 روی نقشه کلیک کن؛ بعدش می‌تونی خودِ مارکر رو هم جابه‌جا کنی';
+        document.getElementById('pickLocationHint').style.display = 'block';
+        showToast('روی نقشه کلیک کن تا موقعیت انتخاب بشه', 'info');
+    });
+
+    document.getElementById('saveColorsBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('saveColorsBtn');
+        const accentColor = document.getElementById('colorAccent').value;
+        const panelBgColor = document.getElementById('colorPanelBg').value;
+        const successColor = document.getElementById('colorSuccess').value;
+
+        btn.disabled = true;
+        try {
+            const res = await fetch('/api/update-ui-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accentColor, panelBgColor, successColor })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                applyUiColors(data.settings);
+                showToast('✅ رنگ‌ها ذخیره شد', 'success');
+            } else {
+                showToast(`❌ ${data.message || 'خطا در ذخیره رنگ‌ها'}`, 'error');
+            }
+        } catch (e) {
+            showToast('❌ خطا در ارتباط با سرور', 'error');
+            console.error(e);
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    document.getElementById('resetColorsBtn').addEventListener('click', async () => {
+        try {
+            const res = await fetch('/api/reset-ui-settings', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                applyUiColors(data.settings);
+                renderGeneralSettings(company, data.settings);
+                showToast('✅ رنگ‌ها به حالت پیش‌فرض برگشت', 'success');
+            }
+        } catch (e) {
+            showToast('❌ خطا در ارتباط با سرور', 'error');
+            console.error(e);
+        }
+    });
+}
+
+/* ── اعمال رنگ‌های ذخیره‌شده روی کل برنامه ────────────────── */
+function applyUiColors(ui) {
+    if (!ui) return;
+    const root = document.documentElement.style;
+    if (ui.accentColor) root.setProperty('--gold', ui.accentColor);
+    if (ui.panelBgColor) root.setProperty('--navy-dark', ui.panelBgColor);
+    if (ui.successColor) root.setProperty('--green', ui.successColor);
+}
+
+async function loadAndApplyUiColors() {
+    try {
+        const data = await fetch('/api/ui-settings').then(r => r.json());
+        if (data.success) applyUiColors(data.settings);
+    } catch (e) { console.error(e); }
 }
