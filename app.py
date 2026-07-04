@@ -7,6 +7,10 @@ import webbrowser
 from flask import Flask
 
 
+if getattr(sys, "frozen", False):
+    os.chdir(os.path.dirname(sys.executable))
+
+
 def _ensure_config():
     enc_path  = "config/settings.enc"
     json_path = "tools/config.json"

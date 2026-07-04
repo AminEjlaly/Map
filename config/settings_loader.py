@@ -9,9 +9,18 @@ from cryptography.hazmat.backends import default_backend
 
 
 def resource_path(relative_path):
+    """فقط برای فایل‌های read-only که داخل خود exe باندل شدن (مثل templates/static).
+    هرگز برای فایل‌های خارجی/قابل‌تغییر مثل settings.enc استفاده نشه."""
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
+
+
+def external_path(relative_path):
+    """مسیر فایل‌های خارجی/قابل‌ویرایش (کنار exe یا کنار app.py در حالت dev).
+    app.py موقع frozen بودن، cwd رو به پوشه‌ی exe تنظیم می‌کنه، پس همینجا
+    کافیه از مسیر نسبی به cwd استفاده کنیم."""
+    return os.path.abspath(relative_path)
 
 
 def _derive_key(password: str, salt: bytes) -> bytes:
@@ -27,6 +36,8 @@ def load_encrypted_config(file_path: str, password: str) -> dict:
     key = _derive_key(password, salt)
     decrypted = Fernet(key).decrypt(data[16:])
     return json.loads(decrypted.decode("utf-8"))
+
+
 def _save_encrypted_config(config: dict, password: str, path: str):
     salt = os.urandom(16)
     key  = _derive_key(password, salt)
@@ -55,7 +66,7 @@ def update_company_config(name: str = None, lat: float = None, lng: float = None
 
 # ── بارگذاری ──────────────────────────────────────────────────────────────────
 _PASSWORD    = os.environ.get("CONFIG_PASSWORD", "kara.1464o")
-_CONFIG_PATH = resource_path("config/settings.enc")
+_CONFIG_PATH = external_path("config/settings.enc")   # ← اصلاح شد: دیگه از resource_path استفاده نمی‌کنه
 
 _SETTINGS = load_encrypted_config(_CONFIG_PATH, _PASSWORD)
 
